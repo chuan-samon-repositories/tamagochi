@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bicho"
+version = "0.1.0"
+description = "Un tamagotchi que solo sabe lo que le enseñas"
+requires-python = ">=3.10"
+dependencies = ["anthropic>=1.0"]
+
+[project.scripts]
+bicho = "bicho.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+bicho = ["ui/*"]

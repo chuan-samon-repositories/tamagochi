@@ -1,0 +1,115 @@
+<!doctype html>
+<meta charset="utf-8"><title>Bicho</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><text y=%2226%22 font-size=%2226%22>🥚</text></svg>">
+<style>
+  body{font:16px/1.5 system-ui;max-width:640px;margin:2rem auto;padding:0 1rem;
+       background:#111;color:#eee}
+  #face{font-size:5rem;text-align:center;margin:0;cursor:default}
+  #status{text-align:center;color:#888;margin:0 0 1.5rem}
+  .card{background:#1b1b1b;border:1px solid #333;border-radius:8px;padding:1rem;margin-bottom:1rem}
+  input,button{font:inherit;padding:.5rem;border-radius:6px;border:1px solid #444;
+               background:#222;color:#eee}
+  button{cursor:pointer;background:#2d5}button:hover{background:#3e6}
+  button{color:#111;font-weight:600;border:0}
+  #chat{display:flex;gap:.5rem}#q{flex:1}
+  .msg{margin:.5rem 0;padding:.6rem .8rem;border-radius:8px;background:#222}
+  .msg.me{background:#2a3a2a;text-align:right}
+  .msg.no{background:#3a2a2a}
+  small{color:#888}
+  .drop{border:2px dashed #444;padding:1.5rem;text-align:center;border-radius:8px}
+  .drop.over{border-color:#2d5}
+  #bar{height:6px;background:#333;border-radius:3px;overflow:hidden;margin:.8rem 0 0;
+       display:none}
+  #bar div{height:100%;background:#2d5;width:0;transition:width .3s}
+</style>
+
+<p id="face">🥚</p>
+<p id="status">No sé absolutamente nada.</p>
+
+<div class="card">
+  <div class="drop" id="drop">Arrastra un <b>.txt</b> aquí para que lo estudie
+    <br><small>o <label style="text-decoration:underline;cursor:pointer">elige uno
+    <input type="file" id="file" accept=".txt,.md" hidden></label></small>
+    <div id="bar"><div></div></div></div>
+  <div id="learned"></div>
+</div>
+
+<div class="card">
+  <div id="log"></div>
+  <form id="chat"><input id="q" placeholder="Pregúntale algo..." autocomplete="off">
+    <button>Enviar</button></form>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const post = (url, body) => fetch(url, {method:'POST', body:JSON.stringify(body)}).then(r=>r.json());
+
+async function refresh() {
+  const docs = await fetch('/learned').then(r=>r.json());
+  if (!Array.isArray(docs)) { $('#face').textContent='🤒';
+    $('#status').textContent = docs.error; return; }
+  $('#learned').innerHTML = docs.map(d =>
+    `<p><b>📗 ${d.title}</b> <small>· leído en ${d.chunks} partes</small>` +
+    `<br><small>${(d.concepts||'').split(',').join(', ')||'(nada)'}</small></p>`).join('');
+  if (docs.length) { $('#face').textContent = '🙂';
+    $('#status').textContent = `He estudiado ${docs.length} libro(s).`; }
+}
+
+function say(text, cls='') { $('#log').innerHTML += `<div class="msg ${cls}">${text}</div>`;
+  $('#log').scrollIntoView({block:'end'}); }
+
+async function learn(name, text) {
+  const r = await post('/study', {title:name, text});
+  if (r.error) { $('#face').textContent='🤒'; $('#status').textContent = r.error; return; }
+  $('#bar').style.display = 'block';
+  seguir(name);
+}
+
+// Leer un libro son minutos: el servidor lee en segundo plano y aquí se mira.
+async function seguir(name) {
+  const p = await fetch('/progress').then(r=>r.json());
+  const bar = $('#bar').firstElementChild;
+  if (p.estado === 'leyendo') {
+    $('#face').textContent = '📖';
+    $('#status').textContent = p.total
+      ? `Leyendo ${name}... parte ${p.leidos+1} de ${p.total}`
+      : `Abriendo ${name}...`;
+    bar.style.width = p.total ? `${p.leidos/p.total*100}%` : '2%';
+  } else if (p.estado === 'ordenando') {
+    $('#face').textContent = '🧐';
+    $('#status').textContent = 'Ordenando lo aprendido...';
+    bar.style.width = '100%';
+  } else {
+    $('#bar').style.display = 'none';
+    if (p.estado === 'error') { $('#face').textContent='🤒';
+      $('#status').textContent = p.error || 'Algo ha ido mal estudiando.'; }
+    else if (!p.conceptos || !p.conceptos.length) { $('#face').textContent = '🤨';
+      $('#status').textContent = 'No he sacado nada en claro de eso.'; }
+    else { $('#face').textContent = '🤩';
+      $('#status').textContent = `¡He aprendido ${p.conceptos.length} conceptos!`; }
+    return refresh();
+  }
+  setTimeout(() => seguir(name), 700);
+}
+
+const readFile = f => f.text().then(t => learn(f.name, t));
+$('#file').onchange = e => readFile(e.target.files[0]);
+const drop = $('#drop');
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over');
+  readFile(e.dataTransfer.files[0]); };
+
+$('#chat').onsubmit = async e => {
+  e.preventDefault();
+  const q = $('#q').value.trim(); if (!q) return;
+  $('#q').value = ''; say(q, 'me');
+  $('#face').textContent = '🤔';
+  const r = await post('/ask', {q});
+  if (r.error) { $('#face').textContent='🤒'; return say(r.error, 'no'); }
+  $('#face').textContent = r.knows ? '🙂' : '❓';
+  say(r.text, r.knows ? '' : 'no');
+};
+
+refresh();
+</script>
