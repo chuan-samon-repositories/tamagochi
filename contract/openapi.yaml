@@ -1,0 +1,169 @@
+openapi: 3.1.0
+info:
+  title: Bicho
+  version: "1.0.0"
+  description: |
+    El cerebro del tamagotchi. Estudia documentos y responde solo sobre lo que
+    ha estudiado.
+
+    OBJETIVO, NO ESTADO ACTUAL: la implementación en apps/bicho todavía no
+    cumple esta especificación. Ver contract/README.md para la lista de
+    diferencias pendientes.
+servers:
+  - url: http://localhost:8777/v1
+    description: Desarrollo local
+  - url: https://api.example.com/v1
+    description: Mac Mini, detrás de Cloudflare Tunnel (cambiar el hostname)
+
+paths:
+  /learned:
+    get:
+      summary: Qué ha estudiado el bicho
+      responses:
+        "200":
+          description: Un documento por elemento, en orden de llegada.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Doc" }
+        "500": { $ref: "#/components/responses/Error" }
+
+  /study:
+    post:
+      summary: Enseñarle un documento
+      description: |
+        Devuelve inmediatamente. Estudiar son minutos, así que corre en segundo
+        plano y el progreso se consulta en GET /study/progress.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, text]
+              properties:
+                title: { type: string, minLength: 1, example: "sumas-y-restas.txt" }
+                text:  { type: string, minLength: 1 }
+      responses:
+        "202":
+          description: Aceptado, ha empezado a leer.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [started]
+                properties:
+                  started: { type: boolean, const: true }
+        "409":
+          description: Ya está estudiando otra cosa. Un bicho, un estudio a la vez.
+          $ref: "#/components/responses/Error"
+        "413":
+          description: El documento pasa de BICHO_MAX_DOC_CHARS.
+          $ref: "#/components/responses/Error"
+        "400": { $ref: "#/components/responses/Error" }
+
+  /study/progress:
+    get:
+      summary: Por dónde va
+      description: La UI pregunta por aquí mientras el bicho lee.
+      responses:
+        "200":
+          description: Estado actual del estudio.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Progress" }
+
+  /ask:
+    post:
+      summary: Preguntarle algo
+      description: |
+        Si el gate no encuentra ningún concepto estudiado que cubra la pregunta,
+        responde knows=false sin gastar una llamada de redacción.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [q]
+              properties:
+                q: { type: string, minLength: 1, example: "¿qué es una resta?" }
+      responses:
+        "200":
+          description: Respuesta del bicho.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [knows, text]
+                properties:
+                  knows:
+                    type: boolean
+                    description: false = no lo ha estudiado; `text` es una excusa con gracia.
+                  text: { type: string }
+        "400": { $ref: "#/components/responses/Error" }
+        "502":
+          description: Falló el proveedor del LLM.
+          $ref: "#/components/responses/Error"
+
+components:
+  schemas:
+    Doc:
+      type: object
+      required: [id, title, added_at, chunks, concepts]
+      properties:
+        id:       { type: integer }
+        title:    { type: string }
+        added_at: { type: string, format: date-time }
+        chunks:
+          type: integer
+          description: En cuántos trozos se leyó.
+        concepts:
+          type: array
+          items: { type: string }
+          description: Array, nunca un string con comas.
+
+    Progress:
+      type: object
+      required: [state]
+      properties:
+        state:
+          type: string
+          enum: [idle, reading, sorting, done, error]
+        read:
+          type: integer
+          description: Trozos leídos. Presente si state=reading|sorting|done.
+        total:
+          type: integer
+          description: Trozos totales. 0 mientras aún está troceando.
+        concepts:
+          type: array
+          items: { type: string }
+          description: Solo si state=done.
+        error:
+          type: string
+          description: Solo si state=error.
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Estable, para que el cliente ramifique sin leer el texto.
+              examples: [already_studying, doc_too_large, bad_request, upstream_failed]
+            message:
+              type: string
+              description: Para enseñar al usuario. Nunca un traceback.
+
+  responses:
+    Error:
+      description: Algo ha ido mal.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }

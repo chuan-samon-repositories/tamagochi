@@ -1,0 +1,23 @@
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- secrets: never commit a real .env, only .env.example ---
+.env
+.env.*
+!.env.example
+
+# --- python (apps/bicho) ---
+.venv/
+__pycache__/
+*.egg-info/
+build/
+*.db
+
+# --- node (apps/web) ---
+node_modules/
+dist/
+.vercel/
+
+# --- logs from the local server ---
+*.log

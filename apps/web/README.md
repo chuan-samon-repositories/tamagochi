@@ -1,16 +1,41 @@
-# React + Vite
+# apps/web
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+La cara del bicho. React 19 + Vite, todo cliente. Se despliega en **Vercel** con
+*Root Directory* = `apps/web`.
 
-Currently, two official plugins are available:
+```bash
+npm ci
+npm run dev      # http://localhost:5173
+npm run lint
+npm run build
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Cómo habla con el cerebro
 
-## React Compiler
+Por el contrato de [`contract/openapi.yaml`](../../contract/openapi.yaml), que
+sirve `apps/bicho` en `http://localhost:8777`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Hoy no habla.** No hay capa de datos: ni `fetch`, ni URL base, ni datos
+falsos. Todas las estadísticas de la barra lateral son constantes de módulo
+(`src/App.jsx:198-222`), y faltan dos pantallas enteras — no hay ninguna entrada
+de fichero o texto para `/study`, y la única superficie de salida es una burbuja
+de 26 px con un `"?"`, donde no cabe una respuesta. Ver
+[`docs/known-issues.md`](../../docs/known-issues.md).
 
-## Expanding the Oxlint configuration
+Para desarrollo, evita CORS con un proxy en `vite.config.js`:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+```js
+server: { proxy: { '/api': { target: 'http://localhost:8777', rewrite: p => p.replace(/^\/api/, '/v1') } } }
+```
+
+En producción, el mismo truco se hace con un `rewrite` de Vercel hacia el túnel
+del Mac Mini — ver [`deploy/README.md`](../../deploy/README.md).
+
+## La criatura
+
+Nada es un bitmap ni un sprite. `blobatar` genera un SVG determinista a partir
+de una semilla guardada en `localStorage`; el huevo es CSS puro (`border-radius`
+de blob, `radial-gradient`, grietas por `clip-path`); el nido es SVG en línea con
+un anillo de 16 elipses generado en JS. El movimiento son cuatro `@keyframes` más
+un bucle `requestAnimationFrame` que escribe `transform` directamente sin pasar
+por el estado de React.

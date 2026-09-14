@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  LaunchDaemon para el cerebro en el Mac Mini.
+
+  Daemon y no Agent a propósito: un LaunchAgent solo arranca cuando hay sesión
+  iniciada, así que tras un corte de luz el bicho no volvería hasta que alguien
+  hiciera login. Un Daemon arranca en el boot.
+
+  Sustituir TODOS los <!-- CAMBIAR --> antes de instalar.
+  Instrucciones en deploy/README.md.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.chuan-samon.bicho</string>
+
+    <!-- CAMBIAR: el usuario del Mac Mini. Sin esto corre como root, que no hace falta. -->
+    <key>UserName</key>
+    <string>TU_USUARIO</string>
+
+    <!-- CAMBIAR: ruta absoluta al ejecutable del venv. -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/TU_USUARIO/tamagochi/apps/bicho/.venv/bin/bicho</string>
+    </array>
+
+    <!-- CAMBIAR. Importante: config.load_dotenv() busca el .env desde el
+         directorio actual hacia arriba, así que esto tiene que apuntar a
+         apps/bicho, donde vive el .env. -->
+    <key>WorkingDirectory</key>
+    <string>/Users/TU_USUARIO/tamagochi/apps/bicho</string>
+
+    <!-- El cerebro fuera del repo: no se borra al hacer git clean. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>BICHO_DB</key>
+        <string>/Users/TU_USUARIO/.bicho/brain.db</string>
+        <key>BICHO_PORT</key>
+        <string>8777</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Relanzar si se cae, pero no si sale bien (p.ej. un stop manual). -->
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <!-- Si revienta al arrancar, no entrar en bucle de reinicios. -->
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/TU_USUARIO/Library/Logs/bicho.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/TU_USUARIO/Library/Logs/bicho.error.log</string>
+</dict>
+</plist>

@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  brain:
+    name: apps/bicho
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e apps/bicho
+
+      # Sin pytest a propósito: los tests son scripts con asserts y se corren
+      # igual a mano. Si uno falla, sale con código distinto de 0.
+      - name: Tests
+        run: |
+          python apps/bicho/tests/test_config.py
+          python apps/bicho/tests/test_gate.py
+          python apps/bicho/tests/test_llm.py
+
+      # Ninguno de los tests llama a la API: test_gate.py usa un LLM falso.
+      # Esto lo comprueba, para que no se cuele una llamada de pago en CI.
+      - name: Ninguna llamada real al LLM
+        env:
+          ANTHROPIC_API_KEY: "sk-ant-esto-no-es-una-clave"
+        run: python apps/bicho/tests/test_gate.py
+
+  web:
+    name: apps/web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  contract:
+    name: contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml
+      - name: openapi.yaml es YAML válido y sus $ref resuelven
+        run: |
+          python - <<'PY'
+          import re, sys, yaml
+          path = "contract/openapi.yaml"
+          spec = yaml.safe_load(open(path))
+          comps = spec.get("components", {})
+          bad = [f"{k}/{n}" for k, n in set(re.findall(r'#/components/(\w+)/(\w+)', open(path).read()))
+                 if n not in comps.get(k, {})]
+          if bad:
+              sys.exit(f"$ref rotos: {bad}")
+          print(f"ok — {len(spec['paths'])} endpoints, {len(comps.get('schemas', {}))} schemas")
+          PY

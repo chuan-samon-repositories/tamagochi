@@ -1,0 +1,25 @@
+# Cloudflare Tunnel: expone el bicho sin abrir un solo puerto en el router.
+#
+# El túnel sale HACIA Cloudflare desde el Mac Mini, así que no hace falta
+# port forwarding, ni IP fija, ni DDNS, ni gestionar certificados. Encaja con
+# que server.py escuche en 127.0.0.1 y no en 0.0.0.0: eso ya es el
+# comportamiento correcto, no lo cambies.
+#
+# Copiar a ~/.cloudflared/config.yml y rellenar. Ver deploy/README.md.
+
+tunnel: TUNNEL_ID
+credentials-file: /Users/TU_USUARIO/.cloudflared/TUNNEL_ID.json
+
+ingress:
+  - hostname: bicho.TU_DOMINIO.com
+    service: http://127.0.0.1:8777
+    originRequest:
+      # /ask tarda lo que tarde el LLM en redactar. /study contesta al instante
+      # porque el trabajo real va en segundo plano.
+      connectTimeout: 10s
+      # OJO: el plan free de Cloudflare corta la petición a los 100 s (error 524).
+      # /ask con Sonnet va muy por debajo, pero si algún día pones un modelo
+      # lento o quitas el background de /study, esto es lo que se rompe primero.
+
+  # Todo lo que no sea ese hostname, fuera.
+  - service: http_status:404
