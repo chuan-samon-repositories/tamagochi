@@ -1,0 +1,532 @@
+SUMAS Y RESTAS DESDE CERO
+Un libro para quien no ha visto nunca un número
+
+
+PARTE 0. ANTES DE NADA: LOS NÚMEROS
+
+Un número es una respuesta a la pregunta "¿cuántos hay?".
+
+Si tienes tres piedras en la mano, el número 3 es la forma corta de decir
+"esta cantidad de piedras". Si sueltas todas las piedras, te quedan cero: el
+cero es el número que dice "no hay nada".
+
+Los números se pueden ordenar, del más pequeño al más grande:
+
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, ...
+
+Esa fila se llama la RECTA NUMÉRICA, y es útil imaginarla como una calle con
+casas numeradas. Cuanto más a la derecha vas, más grande es el número.
+
+    0---1---2---3---4---5---6---7---8---9---10--->
+
+Todo lo que viene después en este libro son dos formas de moverse por esa
+calle: hacia la derecha (sumar) y hacia la izquierda (restar).
+
+
+PARTE 1. LA SUMA
+
+
+1.1. QUÉ ES SUMAR
+
+Sumar es JUNTAR cantidades.
+
+Si tienes 3 manzanas y alguien te da 4 manzanas más, ahora tienes 7 manzanas.
+Eso es una suma: has juntado un grupo de 3 con un grupo de 4 y has contado
+cuántas hay en total.
+
+    ooo   +   oooo   =   ooooooo
+     3          4            7
+
+No hace falta contar de uno en uno cada vez. Lo bonito de la suma es que es
+una regla fija: 3 y 4 siempre serán 7, con manzanas, con euros o con años.
+
+
+1.2. CÓMO SE ESCRIBE
+
+La suma se escribe con el signo MÁS, que es una cruz: +
+Y con el signo IGUAL, que son dos rayas: =
+
+    3 + 4 = 7
+
+Se lee: "tres más cuatro es igual a siete", o simplemente "tres más cuatro,
+siete".
+
+El signo igual (=) no significa "aquí viene el resultado". Significa que lo
+que hay a la izquierda vale exactamente lo mismo que lo que hay a la derecha.
+"3 + 4" y "7" son dos maneras de escribir la misma cantidad.
+
+
+1.3. CÓMO SE LLAMA CADA COSA
+
+En una suma, cada número tiene su nombre:
+
+    3    +    4    =    7
+    ^         ^         ^
+ sumando   sumando    suma
+                    (o total)
+
+Los números que juntas se llaman SUMANDOS. El resultado se llama SUMA o
+TOTAL. Puede haber más de dos sumandos:
+
+    2 + 3 + 5 = 10
+
+Aquí hay tres sumandos y el total es 10.
+
+
+1.4. SUMAR EN LA RECTA NUMÉRICA
+
+Sumar es AVANZAR hacia la derecha.
+
+Para hacer 5 + 3: te colocas en el 5 y das 3 pasos a la derecha.
+
+    0---1---2---3---4---5---6---7---8--->
+                      inicio  1   2   3
+                        5             8
+
+Llegas al 8. Por eso 5 + 3 = 8.
+
+Esta imagen es la que conviene tener en la cabeza: sumar es moverse hacia
+adelante en la calle de los números.
+
+
+1.5. TRES REGLAS QUE SIEMPRE SE CUMPLEN
+
+Regla 1: EL ORDEN NO IMPORTA (propiedad conmutativa)
+
+    2 + 6 = 8        y también        6 + 2 = 8
+
+Juntar un grupo de 2 con uno de 6 da lo mismo que juntar uno de 6 con uno de 2.
+Esto es muy práctico: si te cuesta hacer 2 + 9, hazlo al revés, 9 + 2, y
+cuenta dos pasos desde el 9.
+
+Regla 2: SE PUEDEN AGRUPAR COMO QUIERAS (propiedad asociativa)
+
+Si tienes tres o más sumandos, da igual por dónde empieces.
+
+    (2 + 3) + 4  =  5 + 4  =  9
+    2 + (3 + 4)  =  2 + 7  =  9
+
+Los paréntesis solo dicen "haz esto primero". El resultado es el mismo.
+Esto también es práctico: en 7 + 8 + 3 conviene juntar antes el 7 y el 3,
+que dan 10 redondo, y luego añadir el 8: 10 + 8 = 18.
+
+Regla 3: EL CERO NO CAMBIA NADA (elemento neutro)
+
+    5 + 0 = 5
+    0 + 5 = 5
+
+Añadir "nada" deja la cantidad como estaba. Por eso al cero se le llama el
+elemento neutro de la suma.
+
+
+1.6. LAS SUMAS QUE CONVIENE SABERSE DE MEMORIA
+
+Sumar números pequeños se acaba haciendo sin pensar, igual que se reconocen
+las letras sin deletrearlas. Estas son las que más se usan:
+
+    1 + 1 = 2      2 + 2 = 4      3 + 3 = 6      4 + 4 = 8
+    5 + 5 = 10     6 + 6 = 12     7 + 7 = 14     8 + 8 = 16
+    9 + 9 = 18
+
+Y sobre todo, las parejas que suman 10, porque el 10 es el número con el que
+está construido todo nuestro sistema de escribir números:
+
+    1 + 9 = 10     2 + 8 = 10     3 + 7 = 10
+    4 + 6 = 10     5 + 5 = 10
+
+Truco: para hacer 9 + 8, piensa "al 9 le falta 1 para llegar a 10". Le quitas
+ese 1 al 8 (queda 7) y ya tienes 10 + 7 = 17.
+
+
+1.7. SUMAR NÚMEROS GRANDES: LAS COLUMNAS
+
+Con números de dos o más cifras, la suma se escribe uno debajo del otro,
+alineando las cifras por la derecha, y se suma columna a columna empezando
+POR LA DERECHA.
+
+Ejemplo sencillo, 45 + 30:
+
+      45
+    + 30
+    ----
+      75
+
+Columna de la derecha (las unidades): 5 + 0 = 5.
+Columna de la izquierda (las decenas): 4 + 3 = 7.
+Resultado: 75.
+
+
+1.8. SUMAR LLEVANDO
+
+A veces una columna se pasa de 9. Entonces se "lleva" una unidad a la
+columna siguiente. Se ve mejor con un ejemplo.
+
+Ejemplo: 27 + 35
+
+      1          <- lo que me llevo
+      27
+    + 35
+    ----
+      62
+
+Paso a paso:
+  - Unidades: 7 + 5 = 12. Doce es "una decena y dos unidades". Escribo el 2
+    debajo y me LLEVO 1 a la columna de las decenas.
+  - Decenas: 2 + 3 = 5, más el 1 que me llevaba = 6. Escribo el 6.
+  - Resultado: 62.
+
+Ejemplo con tres cifras: 148 + 276
+
+     11          <- lo que me llevo
+     148
+   + 276
+   -----
+     424
+
+Paso a paso:
+  - Unidades: 8 + 6 = 14. Escribo 4, me llevo 1.
+  - Decenas: 4 + 7 = 11, más 1 que llevaba = 12. Escribo 2, me llevo 1.
+  - Centenas: 1 + 2 = 3, más 1 que llevaba = 4. Escribo 4.
+  - Resultado: 424.
+
+La idea de fondo: cada columna solo puede guardar de 0 a 9. Cuando se llena,
+lo que sobra se pasa a la casilla de al lado.
+
+
+1.9. PARA QUÉ SIRVE LA SUMA
+
+La suma aparece cada vez que hay que JUNTAR o AÑADIR algo:
+
+  - La cuenta de la compra. Pan 2 €, leche 1 €, fruta 4 €. Total: 2 + 1 + 4 = 7 €.
+  - Contar gente. En una sala hay 12 personas y entran 5 más: 12 + 5 = 17.
+  - Sumar puntos en un juego. Llevas 30 y ganas 20: 30 + 20 = 50.
+  - Calcular una edad futura. Tienes 34 años; dentro de 6 tendrás 34 + 6 = 40.
+  - Medir un recorrido total. Caminas 3 km por la mañana y 2 por la tarde:
+    3 + 2 = 5 km en el día.
+  - Juntar tiempo. Cocinas 15 minutos y horneas 40: 15 + 40 = 55 minutos.
+
+En todos los casos la pregunta es la misma: "si lo pongo todo junto, ¿cuánto
+hay?".
+
+
+PARTE 2. LA RESTA
+
+
+2.1. QUÉ ES RESTAR
+
+Restar es QUITAR de una cantidad.
+
+Si tienes 7 manzanas y te comes 3, te quedan 4. Eso es una resta: has
+apartado 3 de un grupo de 7 y has contado lo que queda.
+
+    ooooooo   quitando   ooo   =   oooo
+       7                  3          4
+
+La resta también responde a otra pregunta muy común: "¿cuánto le falta a esto
+para llegar a aquello?". Si tienes 3 y necesitas 7, te faltan 4. Es la misma
+cuenta vista del revés.
+
+
+2.2. CÓMO SE ESCRIBE
+
+La resta se escribe con el signo MENOS, que es una raya: -
+
+    7 - 3 = 4
+
+Se lee: "siete menos tres es igual a cuatro".
+
+
+2.3. CÓMO SE LLAMA CADA COSA
+
+    7      -      3      =      4
+    ^             ^             ^
+ minuendo    sustraendo    diferencia
+
+El MINUENDO es la cantidad que tenías. El SUSTRAENDO es lo que quitas. La
+DIFERENCIA es lo que queda. Los nombres son raros, pero se usan mucho en la
+escuela, así que conviene reconocerlos.
+
+
+2.4. RESTAR EN LA RECTA NUMÉRICA
+
+Si sumar era avanzar, restar es RETROCEDER hacia la izquierda.
+
+Para hacer 8 - 3: te colocas en el 8 y das 3 pasos hacia atrás.
+
+    <---0---1---2---3---4---5---6---7---8
+                            3   2   1  inicio
+                            5             8
+
+Llegas al 5. Por eso 8 - 3 = 5.
+
+
+2.5. LA RESTA NO SE PUEDE DAR LA VUELTA
+
+Esta es la diferencia más importante con la suma.
+
+En la suma el orden daba igual: 2 + 6 y 6 + 2 valen lo mismo.
+En la resta NO:
+
+    9 - 4 = 5
+    4 - 9  no es 5
+
+Tiene sentido: quitarle 4 a un grupo de 9 no es lo mismo que quitarle 9 a un
+grupo de 4. Del segundo no tienes suficiente para quitar.
+
+Por eso, al escribir una resta, hay que tener cuidado con qué número va
+delante. El minuendo es siempre la cantidad de la que partes.
+
+
+2.6. RESTAR CON EL CERO Y CONSIGO MISMO
+
+    9 - 0 = 9      Quitar nada deja la cantidad igual.
+    6 - 6 = 0      Quitarlo todo deja cero.
+    0 - 0 = 0
+
+El cero se comporta igual de tranquilo que en la suma: no molesta.
+
+
+2.7. LA RESTA COMO LA SUMA AL REVÉS
+
+Sumar y restar son operaciones opuestas: una deshace lo que hace la otra.
+
+    5 + 3 = 8      y entonces      8 - 3 = 5
+    12 - 4 = 8     y entonces      8 + 4 = 12
+
+De ahí sale la mejor forma de COMPROBAR una resta: suma el resultado con lo
+que quitaste, y tienes que volver al número de partida.
+
+    ¿Está bien 52 - 27 = 25?
+    Comprobación: 25 + 27 = 52. Sí, está bien.
+
+Este truco vale para toda la vida y evita muchísimos errores.
+
+
+2.8. RESTAR NÚMEROS GRANDES: LAS COLUMNAS
+
+Igual que la suma: uno debajo del otro, alineados por la derecha, y se resta
+columna a columna empezando POR LA DERECHA.
+
+Ejemplo sencillo, 68 - 25:
+
+      68
+    - 25
+    ----
+      43
+
+Unidades: 8 - 5 = 3. Decenas: 6 - 2 = 4. Resultado: 43.
+
+
+2.9. RESTAR LLEVANDO (O "PIDIENDO PRESTADO")
+
+A veces la cifra de arriba es más pequeña que la de abajo y no se puede
+restar directamente. Entonces se le pide prestada una unidad a la columna de
+al lado.
+
+Ejemplo: 52 - 27
+
+      4 12          <- el 5 se convierte en 4 y presta 10 al 2
+      5  2
+    - 2  7
+    ------
+      2  5
+
+Paso a paso:
+  - Unidades: 2 - 7 no se puede, el 2 es más pequeño. Le pido prestada una
+    decena al 5 de al lado. Esa decena vale 10 unidades, así que el 2 pasa a
+    ser 12, y el 5 se queda en 4.
+  - Ahora sí: 12 - 7 = 5. Escribo el 5.
+  - Decenas: me quedaba un 4 (ya no un 5), y 4 - 2 = 2. Escribo el 2.
+  - Resultado: 25.
+
+Comprobación: 25 + 27 = 52. Correcto.
+
+Ejemplo con ceros, 300 - 148:
+
+    300
+  - 148
+  -----
+    152
+
+Aquí hay que pedir prestado dos veces seguidas porque las columnas del medio
+están a cero. El resultado es 152.
+
+Comprobación: 152 + 148 = 300. Correcto.
+
+
+2.10. CUANDO EL RESULTADO SE VA POR DEBAJO DE CERO
+
+¿Y si quitas más de lo que tienes? Por ejemplo, 3 - 5.
+
+En la calle de los números, empiezas en el 3 y retrocedes 5 pasos: pasas por
+el 2, el 1, el 0... y sigues. Los números que hay a la izquierda del cero se
+llaman NÚMEROS NEGATIVOS y se escriben con un menos delante.
+
+    <---(-2)--(-1)---0---1---2---3--->
+
+    3 - 5 = -2
+
+Se lee "menos dos". En la vida real aparecen cuando algo puede quedar en
+contra: una cuenta bancaria con 3 € en la que gastas 5 queda en -2 €, y un
+termómetro que marca -2 grados está dos grados por debajo del cero.
+
+Para empezar basta con saber que existen y que el signo menos delante
+significa "por debajo de cero".
+
+
+2.11. PARA QUÉ SIRVE LA RESTA
+
+La resta aparece cada vez que hay que QUITAR, COMPARAR o ver CUÁNTO FALTA:
+
+  - El cambio en una tienda. Pagas con 20 € algo que cuesta 13: 20 - 13 = 7 €
+    de vuelta.
+  - Lo que queda de algo. Tenías 40 páginas por leer y has leído 16:
+    40 - 16 = 24 páginas.
+  - Comparar dos cantidades. Ana tiene 15 cromos y Luis 9: Ana tiene
+    15 - 9 = 6 cromos más.
+  - Cuánto falta. Son las 14:00 y el tren sale a las 17:00: faltan
+    17 - 14 = 3 horas.
+  - Calcular una edad pasada. Tienes 34 años; hace 8 tenías 34 - 8 = 26.
+  - Bajar de peso, de precio o de nivel. Una camiseta de 25 € con 10 € de
+    descuento cuesta 25 - 10 = 15 €.
+
+La pregunta de fondo siempre es una de estas dos: "¿cuánto queda?" o
+"¿cuánta diferencia hay?".
+
+
+PARTE 3. SUMAR Y RESTAR JUNTAS
+
+
+3.1. VARIAS OPERACIONES SEGUIDAS
+
+Cuando hay sumas y restas mezcladas y no hay paréntesis, se resuelven POR
+ORDEN, de izquierda a derecha, como se lee.
+
+    12 + 5 - 3
+
+    Primero:  12 + 5 = 17
+    Después:  17 - 3 = 14
+    Resultado: 14
+
+Otro:
+
+    20 - 8 + 6
+
+    Primero:  20 - 8 = 12
+    Después:  12 + 6 = 18
+    Resultado: 18
+
+Cuidado: aquí el orden SÍ importa. Si alguien hiciera primero 8 + 6 = 14 y
+luego 20 - 14, saldría 6, que no es lo mismo.
+
+
+3.2. LOS PARÉNTESIS MANDAN
+
+Un paréntesis significa "esto va primero", y cambia el resultado:
+
+    20 - (8 + 6)  =  20 - 14  =  6
+
+Compáralo con el ejemplo anterior, que daba 18. Los paréntesis no son
+decoración: dicen qué se agrupa con qué.
+
+
+3.3. PROBLEMAS CON LAS DOS OPERACIONES
+
+La mayoría de las situaciones reales mezclan las dos.
+
+Problema 1.
+Tenías 45 € en la cartera. Gastas 18 € en la compra y luego un amigo te
+devuelve 20 € que te debía. ¿Cuánto tienes ahora?
+
+    45 - 18 = 27      (después de la compra)
+    27 + 20 = 47      (después de que te devuelvan)
+    Respuesta: 47 €.
+
+Problema 2.
+En una cesta hay 12 manzanas y 8 peras. Alguien se come 5 piezas de fruta.
+¿Cuántas quedan?
+
+    12 + 8 = 20       (fruta total)
+    20 - 5 = 15       (después de comer)
+    Respuesta: 15 piezas.
+
+Problema 3.
+Un autobús sale con 30 pasajeros. En la primera parada bajan 12 y suben 7.
+¿Cuántos van ahora?
+
+    30 - 12 = 18
+    18 + 7 = 25
+    Respuesta: 25 pasajeros.
+
+El método es siempre el mismo: traducir la historia a operaciones, una por
+una, en el orden en que ocurren.
+
+
+PARTE 4. ERRORES QUE SE COMETEN MUCHO
+
+  - Alinear mal las columnas. Las cifras se alinean por la DERECHA, no por
+    la izquierda. Si sumas 148 + 27, el 7 va debajo del 8, no debajo del 1.
+
+  - Olvidar lo que se lleva. En la suma, si una columna pasa de 9, hay que
+    añadir 1 a la siguiente. Es el fallo más común de todos.
+
+  - Dar la vuelta a una resta. Si no se puede hacer 2 - 7 en una columna, la
+    solución NO es hacer 7 - 2. Hay que pedir prestado.
+
+  - Confundir el orden en un problema. "Le quité 5 a 12" es 12 - 5, no 5 - 12.
+    El número del que partes va primero.
+
+  - Ignorar los paréntesis. 20 - (8 + 6) y 20 - 8 + 6 dan resultados
+    distintos.
+
+  - No comprobar. Una resta se comprueba sumando; una suma se comprueba
+    restando. Cuesta diez segundos.
+
+
+PARTE 5. EJERCICIOS
+
+Intenta hacerlos antes de mirar las soluciones.
+
+   1)  6 + 7
+   2)  24 + 18
+   3)  156 + 87
+   4)  9 - 4
+   5)  40 - 16
+   6)  205 - 78
+   7)  30 + 12 - 7
+   8)  100 - (35 + 15)
+   9)  Pagas con 50 € una comida de 32 €. ¿Cuánto te devuelven?
+  10)  Tenías 18 canicas, ganas 9 y pierdes 4. ¿Cuántas tienes?
+
+SOLUCIONES
+
+   1)  13
+   2)  42        (4+8=12, escribo 2 y llevo 1; 2+1+1=4)
+   3)  243       (6+7=13, escribo 3 llevo 1; 5+8+1=14, escribo 4 llevo 1; 1+1=2)
+   4)  5
+   5)  24        (0-6 no se puede: presto, 10-6=4; queda 3-1=2)
+   6)  127       (comprobación: 127 + 78 = 205)
+   7)  35        (30+12=42, luego 42-7=35)
+   8)  50        (primero el paréntesis: 35+15=50; luego 100-50=50)
+   9)  18 €      (50 - 32)
+  10)  23        (18+9=27, luego 27-4=23)
+
+
+RESUMEN DE UNA PÁGINA
+
+  - Sumar es juntar. Se escribe con + y avanza en la recta numérica.
+    Sus partes: sumandos y total. El orden no importa. El 0 no cambia nada.
+
+  - Restar es quitar, o ver cuánto falta. Se escribe con - y retrocede en la
+    recta numérica. Sus partes: minuendo, sustraendo y diferencia. El orden
+    SÍ importa.
+
+  - Con números grandes se colocan en columnas alineadas por la derecha y se
+    opera de derecha a izquierda, llevando en la suma y pidiendo prestado en
+    la resta.
+
+  - Son operaciones opuestas: cada una deshace a la otra, y por eso sirven
+    para comprobarse entre ellas.
+
+  - Sin paréntesis, se opera de izquierda a derecha. Con paréntesis, primero
+    lo de dentro.
