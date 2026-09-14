@@ -23,7 +23,8 @@ usados = {}
 
 def fake_ask(model, system, user, **kw):
     usados["chat"] = model
-    usados["material"] = system[0]["text"]
+    usados["chat_system"] = system
+    usados["material"] = system[1]["text"]
     return "RESPUESTA"
 
 
@@ -41,7 +42,9 @@ def fake_ask_json(model, system, user, schema, **kw):
             {"nombre": "minuendo", "variantes": ["minuendo"]},
         ]}
     usados["gate"] = model                          # el gate
-    catalogo = [l[2:] for l in user.splitlines() if l.startswith("- ")]
+    usados["gate_system"] = system
+    # El catálogo va en el system cacheado, no en el mensaje del usuario.
+    catalogo = [l[2:] for l in system[1]["text"].splitlines() if l.startswith("- ")]
     pregunta = user.split("PREGUNTA:")[1].lower()
     return {"concepts": [c for c in catalogo if c in pregunta]}
 
@@ -57,6 +60,17 @@ assert len(study.trocear(DOC)) == 4, "un párrafo por trozo con este tamaño"
 assert all(len(t) <= 50 for t in study.trocear(DOC)), "ningún trozo se pasa"
 assert study.trocear("") == [] and study.trocear("\n\n  \n\n") == []
 
+# Un .txt con saltos simples y sin líneas en blanco: antes salía un solo trozo
+# gigante y se caía la invariante de "ninguna llamada ve más de un trozo".
+solo_saltos = "\n".join(f"Linea {i} con algo de contenido." for i in range(40))
+assert len(study.trocear(solo_saltos)) > 1, "sin \\n\\n también hay que trocear"
+assert all(len(t) <= config.CHUNK_CHARS for t in study.trocear(solo_saltos))
+
+# Y un párrafo único más largo que el tamaño: se parte igual.
+gigante = "palabra " * 2000
+assert all(len(t) <= config.CHUNK_CHARS for t in study.trocear(gigante)), \
+    "un párrafo enorme no puede salir como un trozo enorme"
+
 # --- estudiar ----------------------------------------------------------------
 finales = study.learn("mates.txt", DOC)
 assert finales == ["minuendo", "resta", "suma"], finales
@@ -65,12 +79,21 @@ assert usados["review"] == config.MODEL_REVIEW, "el repaso, con el que tiene cri
 
 libro = db.learned()[0]
 assert libro["chunks"] == 4, "guarda los cuatro trozos, aunque uno no enseñe nada"
+assert libro["concepts"] == ["minuendo", "resta", "suma"], libro["concepts"]
+assert isinstance(libro["concepts"], list), "lista, no un CSV que parte por comas"
 
 # el repaso unificó variantes y tiró el ruido
 nombres = sorted(db.concept_names())
 assert nombres == ["minuendo", "resta", "suma"], nombres
 assert "restas" not in nombres, "'restas' se unificó con 'resta'"
 assert "errores comunes" not in nombres, "el ruido no sobrevive al repaso"
+
+# --- el catálogo del gate va en el system y cacheado -------------------------
+gate.relevant_concepts("háblame de la resta")
+sistema = usados["gate_system"]
+assert isinstance(sistema, list) and sistema[0]["text"] is prompts.GATE
+assert sistema[1]["cache_control"] == {"type": "ephemeral"}, \
+    "el catálogo es igual en cada pregunta: tiene que estar cacheado"
 
 # --- el gate abre y devuelve conceptos, no documentos ------------------------
 assert gate.relevant_concepts("háblame de la resta") == ["resta"]
@@ -79,6 +102,9 @@ assert gate.relevant_concepts("¿qué es la fotosíntesis?") == []
 # --- LO QUE JUSTIFICA TODO: responder manda solo los trozos del tema ---------
 sabe, _ = chat.answer("háblame de la resta")
 assert sabe
+# Lo estable va primero y el material, cacheado, detrás.
+assert usados["chat_system"][0]["text"] is prompts.CHAT
+assert usados["chat_system"][1]["cache_control"] == {"type": "ephemeral"}
 material = usados["material"]
 assert "Trozo 1" in material and "Trozo 2" in material, "faltan trozos que enseñan resta"
 assert "Trozo 0" not in material, "el trozo de las sumas no pinta nada aquí"
@@ -114,5 +140,29 @@ except RuntimeError as e:
     assert "se cayó la red" in str(e)
 llm.ask_json = fake_ask_json
 assert len(db.learned()) == antes, "un libro a medias se deshace entero"
+
+# --- el repaso de un libro entero no se sale de max_tokens -------------------
+# Con 800 conceptos en una sola llamada el JSON salía cortado, `json.loads`
+# reventaba y `learn()` tiraba el documento entero después de haberlo pagado.
+CRUDOS = [f"concepto numero {i}" for i in range(800)]
+lotes = []
+
+
+def repaso_falso(model, system, user, schema, max_tokens=None, **kw):
+    entrada = [l[2:] for l in user.splitlines() if l.startswith("- ")]
+    lotes.append((len(entrada), max_tokens))
+    return {"conceptos": [{"nombre": n, "variantes": [n]} for n in entrada]}
+
+
+llm.ask_json, db.concept_names, db.apply_review = (
+    repaso_falso, lambda doc_id=None: CRUDOS, lambda doc_id, canonical: (0, 0))
+finales = study.repasar(doc_id=1)
+
+assert len(lotes) > 1, "800 conceptos no pueden ir en una sola llamada"
+assert max(n for n, _ in lotes) <= study.REVIEW_BATCH, "algún lote se pasa del tope"
+assert sorted(finales) == sorted(CRUDOS), "el repaso no puede perder conceptos"
+for n, tope in lotes:
+    # ~16 tokens por concepto en la salida, con holgura de sobra.
+    assert tope >= n * 16, f"lote de {n} con max_tokens={tope}: se cortaría"
 
 print("ok")

@@ -12,7 +12,7 @@ single most important thing to hold in your head:
 
 | | Stack | Deploys to |
 |---|---|---|
-| `apps/bicho` | Python 3.10+, stdlib `http.server`, SQLite. One dependency: `anthropic`. | A **local Mac Mini**, never Vercel |
+| `apps/bicho` | Python (floor 3.10, target 3.12), stdlib `http.server`, SQLite. One dependency: `anthropic`. | A **local Mac Mini**, never Vercel |
 | `apps/web` | React 19 + Vite, all client-side | Vercel, Root Directory `apps/web` |
 
 `apps/bicho` does not go serverless on purpose: studying a book is minutes of
@@ -24,12 +24,15 @@ file on disk. See `docs/architecture.md` before proposing to move it.
 ```bash
 # brain
 cd apps/bicho
-python -m venv .venv && .venv/bin/pip install -e .
+python -m venv .venv
+.venv/bin/pip install -r requirements.lock # exact versions, same as CI
+.venv/bin/pip install -e .
 cp .env.example .env                      # needs ANTHROPIC_API_KEY
-.venv/bin/bicho                           # serves http://localhost:8777
+.venv/bin/bicho                           # endpoints under http://localhost:8777/v1
 
 # a single test (they are plain scripts — no pytest, no framework)
 .venv/bin/python tests/test_gate.py        # the pipeline + gate, with a fake LLM
+.venv/bin/python tests/test_server.py      # CORS, status codes, malformed bodies
 .venv/bin/python tests/test_config.py      # the .env parser
 .venv/bin/python tests/test_llm.py         # model-prefix backend routing
 
@@ -106,28 +109,40 @@ gate more permissive break the product, not just a test.
 
 ## The contract between the halves
 
-`contract/openapi.yaml` is the HTTP boundary. **It specifies the target, not
-current behaviour** — `apps/bicho` does not yet satisfy it. The gap table in
-`contract/README.md` is authoritative. If you change the shape of a response,
-change the contract in the same commit; having both halves in one repo exists
-precisely so that is one PR and not two.
+`contract/openapi.yaml` is the HTTP boundary and **`apps/bicho` now satisfies
+it**: everything is under `/v1`, keys are English (`state`, `read`, `concepts`),
+`concepts` is a list, and errors carry real status codes plus a stable
+`error.code`. `tests/test_server.py` covers this. If you change the shape of a
+response, change the contract in the same commit — having both halves in one
+repo exists precisely so that is one PR and not two.
 
-## Traps that are live right now
+`apps/web` does not call any of it yet; it has no data layer at all.
 
-Read `docs/known-issues.md` before touching the brain. The four that bite first:
+## What is still open
 
-1. `study.repasar()` uses `ask_json`'s default `max_tokens=2000`, but its output
-   must echo back every concept name. It truncates above roughly a 60 KB
-   document, `json.loads` raises, and the whole paid study run is discarded.
-   `MAX_DOC_CHARS` allows 400 KB.
-2. `trocear()` splits only on `\n\n`. A `.txt` with single newlines becomes one
-   giant chunk, silently voiding the no-context-ceiling invariant.
-   `material/salud.txt` in this repo has zero `\n\n`.
-3. **No CORS, and `OPTIONS` returns 501** — the Vercel frontend cannot call the
-   brain at all today.
-4. `json.loads` sits outside `_guard` in `server.py`, so a malformed POST drops
-   the connection with a traceback. All errors return HTTP 200.
+`docs/known-issues.md` lists what was fixed and what remains; `TODO.md` is the
+working list. The two that constrain design decisions:
+
+- **No authentication, and one global brain.** `POST /v1/study` is up to 100
+  paid calls and asks nothing of anyone. Fine on a private box; it is the first
+  thing to solve before the tunnel is open. Per-user brains mean changing both
+  `study.PROGRESO` and `gate`'s unfiltered concept lookup.
+- **No retries across a 100-call chain.** One transient 429/529 rolls back the
+  whole document. Chunks are independent, so this is also where parallelism
+  would go.
 
 `apps/web` has **no data layer at all** — no `fetch`, no base URL, no mock data;
 every stat is a module constant. Wiring it up means building that layer plus two
 UI surfaces that don't exist (study intake, and somewhere to render an answer).
+
+## Things that are load-bearing and easy to break
+
+- `tests/` must never call a real API. `test_gate.py` swaps `llm.ask`/`ask_json`
+  for fakes and CI runs it with a junk key to prove it.
+- The review runs in batches of `study.REVIEW_BATCH` with `max_tokens` derived
+  from batch size. Sending the whole concept list in one call is what used to
+  discard an entire paid study run.
+- `trocear()` guarantees no chunk exceeds `CHUNK_CHARS`. The whole
+  no-context-ceiling claim rests on it.
+- Cacheable content goes first in a `system` list, volatile content last, with
+  `cache_control` on the last stable block. Caching is prefix-based.

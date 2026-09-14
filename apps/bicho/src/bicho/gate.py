@@ -15,10 +15,19 @@ def relevant_concepts(question):
         return []
 
     catalogo = "\n".join(f"- {n}" for n in conocidos)
+    system = [
+        {"type": "text", "text": prompts.GATE},
+        # El catálogo es idéntico en todas las preguntas, así que va en el
+        # system y cacheado. Antes iba dentro del mensaje del usuario, que es
+        # justo la parte que no se puede cachear: se pagaba entero cada vez, y
+        # crece con cada libro que aprende.
+        {"type": "text", "text": f"CONCEPTOS ESTUDIADOS:\n{catalogo}",
+         "cache_control": {"type": "ephemeral"}},
+    ]
     elegidos = llm.ask_json(
         config.MODEL_GATE,
-        prompts.GATE,
-        f"CONCEPTOS ESTUDIADOS:\n{catalogo}\n\nPREGUNTA: {question}",
+        system,
+        f"PREGUNTA: {question}",
         prompts.CONCEPT_LIST_SCHEMA,
         max_tokens=500,
     )["concepts"]

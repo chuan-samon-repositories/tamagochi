@@ -11,7 +11,8 @@ cp .env.example .env         # y pon tu ANTHROPIC_API_KEY dentro
 .venv/bin/bicho              # o: .venv/bin/python -m bicho
 ```
 
-Abre `http://localhost:8777`, arrastra un `.txt` y pregúntale.
+Los endpoints cuelgan de `http://localhost:8777/v1` y su forma está en
+`contract/openapi.yaml`. La interfaz vive en `apps/web`.
 
 ## Estructura
 
@@ -25,10 +26,10 @@ src/bicho/
   study.py      Enseñarle: trocear -> leer trozo a trozo -> repasar.
   gate.py       ¿Lo sabe? El corazón del proyecto.
   chat.py       Hablar: pasa el gate o responde que no sabe.
-  server.py     4 endpoints y un navegador. Estudiar va en segundo plano.
-  ui/           La interfaz, un solo HTML.
+  server.py     Los endpoints. Estudiar va en segundo plano.
 tests/
-  test_gate.py    El gate con un LLM falso. Sin API, sin frameworks.
+  test_gate.py    El estudio y el gate con un LLM falso. Sin API, sin frameworks.
+  test_server.py  CORS, códigos de estado y cuerpos mal formados.
   test_config.py  El lector de .env.
   test_llm.py     El enrutado por prefijo de modelo.
 ```
@@ -100,7 +101,8 @@ saldo, la mezcla que más rinde es el gate en local y el chat en la API.
 ## Tests
 
 ```bash
-.venv/bin/python tests/test_gate.py
-.venv/bin/python tests/test_config.py
-.venv/bin/python tests/test_llm.py
+for t in tests/*.py; do .venv/bin/python "$t"; done
 ```
+
+Ninguno llama a la API: `test_gate.py` sustituye `llm.ask`/`llm.ask_json` por
+falsos. Que siga siendo así.

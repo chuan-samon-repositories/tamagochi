@@ -7,16 +7,25 @@ on:
 
 jobs:
   brain:
-    name: apps/bicho
+    name: apps/bicho (py${{ matrix.python }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.10 es el suelo declarado en pyproject; 3.12 es el objetivo
+        # (.python-version) y lo que corre en el Mac Mini. Probar los dos es lo
+        # que evita que desarrollo y producción se separen sin que nadie lo vea.
+        python: ["3.10", "3.12"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python }}
 
-      - name: Install
-        run: pip install -e apps/bicho
+      - name: Install (versiones exactas del lockfile)
+        run: |
+          pip install -r apps/bicho/requirements.lock
+          pip install -e apps/bicho
 
       # Sin pytest a propósito: los tests son scripts con asserts y se corren
       # igual a mano. Si uno falla, sale con código distinto de 0.
@@ -25,6 +34,7 @@ jobs:
           python apps/bicho/tests/test_config.py
           python apps/bicho/tests/test_gate.py
           python apps/bicho/tests/test_llm.py
+          python apps/bicho/tests/test_server.py
 
       # Ninguno de los tests llama a la API: test_gate.py usa un LLM falso.
       # Esto lo comprueba, para que no se cuele una llamada de pago en CI.
@@ -43,7 +53,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
 

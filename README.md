@@ -25,7 +25,7 @@ Las dos mitades son independientes: se arrancan en dos terminales.
 cd apps/bicho
 python -m venv .venv && .venv/bin/pip install -e .
 cp .env.example .env          # y pon tu ANTHROPIC_API_KEY dentro
-.venv/bin/bicho
+.venv/bin/bicho               # los endpoints cuelgan de /v1
 
 # terminal 2 — la cara, en http://localhost:5173
 cd apps/web
@@ -33,14 +33,13 @@ npm ci
 npm run dev
 ```
 
-`apps/bicho` trae además su propia UI mínima en `http://localhost:8777`, pensada
-para probar el cerebro sin depender de `apps/web`.
-
 ## Tests
 
 ```bash
-cd apps/bicho && .venv/bin/python tests/test_gate.py    # y test_config.py, test_llm.py
-cd apps/web   && npm run lint
+cd apps/bicho
+for t in tests/*.py; do .venv/bin/python "$t"; done      # 4 ficheros, sin pytest
+
+cd apps/web && npm run lint && npm run build
 ```
 
 ## Solo una mitad
@@ -55,7 +54,10 @@ git sparse-checkout set apps/bicho contract deploy
 
 ## Estado
 
-Recién unificado desde dos repos (`CarlosChuan/bicho` y `ArnauSamonRos/TAMAGOCHI`),
-con el historial de ambos intacto. Antes de exponer nada a internet, leer
-[`docs/known-issues.md`](docs/known-issues.md): hay cuatro fallos confirmados que
-conviene arreglar primero, uno de ellos tira a la basura un estudio entero.
+Unificado desde dos repos (`CarlosChuan/bicho` y `ArnauSamonRos/TAMAGOCHI`) con el
+historial de ambos intacto. El cerebro cumple ya
+[`contract/openapi.yaml`](contract/openapi.yaml); la web todavía no lo llama —
+no tiene capa de datos.
+
+Qué falta y en qué orden: [`TODO.md`](TODO.md).
+Lo que se arregló y lo que queda: [`docs/known-issues.md`](docs/known-issues.md).

@@ -133,14 +133,24 @@ def chunks_for(names):
 
 
 def learned():
-    """Resumen para la UI: un doc por fila con sus trozos y conceptos."""
+    """Resumen para la UI: un doc por fila con sus trozos y conceptos.
+
+    Los conceptos van en una lista, no en un `group_concat`: un concepto con una
+    coma dentro partía la lista en dos por el camino."""
     with connect() as c:
-        return [dict(r) for r in c.execute("""
-            SELECT d.id, d.title, d.added_at,
-                   count(DISTINCT k.id)  AS chunks,
-                   group_concat(DISTINCT c.name) AS concepts
+        docs = [dict(r) for r in c.execute("""
+            SELECT d.id, d.title, d.added_at, count(DISTINCT k.id) AS chunks
             FROM docs d
             LEFT JOIN chunks k ON k.doc_id = d.id
-            LEFT JOIN concepts c ON c.chunk_id = k.id
             GROUP BY d.id ORDER BY d.id
         """)]
+        por_doc = {}
+        for doc_id, name in c.execute("""
+            SELECT k.doc_id, c.name FROM concepts c
+            JOIN chunks k ON k.id = c.chunk_id
+            GROUP BY k.doc_id, c.name ORDER BY k.doc_id, c.name
+        """):
+            por_doc.setdefault(doc_id, []).append(name)
+    for d in docs:
+        d["concepts"] = por_doc.get(d["id"], [])
+    return docs

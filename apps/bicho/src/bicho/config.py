@@ -33,13 +33,29 @@ MODEL_REVIEW = os.getenv("BICHO_MODEL_REVIEW", "claude-sonnet-5")
 MODEL_GATE = os.getenv("BICHO_MODEL_GATE", "claude-haiku-4-5")
 MODEL_CHAT = os.getenv("BICHO_MODEL_CHAT", "claude-sonnet-5")
 
-# Ni extraer conceptos ni redactar con el material delante necesitan razonar
-# antes de responder. Haiku 4.5 no acepta este parámetro: por eso es opcional.
+# Ni repasar la lista ni redactar con el material delante necesitan razonar
+# antes de responder. Se aplica solo donde corre un Sonnet; la extracción por
+# trozo va en Haiku 4.5, que no razona por defecto y no necesita que se lo
+# digan. Por eso el parámetro es opcional en llm.ask/ask_json.
 NO_THINKING = {"type": "disabled"}
 DB_PATH = Path(os.getenv("BICHO_DB", Path.home() / ".bicho" / "brain.db"))
 PORT = int(os.getenv("BICHO_PORT", "8777"))
 
 MAX_DOC_CHARS = int(os.getenv("BICHO_MAX_DOC_CHARS", "400000"))
+
+# Tope del cuerpo de una petición, antes de leerlo. Sin esto, `rfile.read()` se
+# tragaría en memoria lo que le manden. UTF-8 gasta hasta 4 bytes por carácter.
+MAX_BODY_BYTES = int(os.getenv("BICHO_MAX_BODY_BYTES", str(MAX_DOC_CHARS * 4 + 65536)))
+
+# Quién puede llamar desde un navegador. La web se sirve desde otro origen
+# (Vercel en producción, :5173 en local), así que sin esto el navegador corta
+# la petición antes de que salga. "*" vale para pruebas, no para la máquina
+# expuesta: allí se ponen los orígenes de verdad.
+CORS_ORIGINS = [o.strip() for o in os.getenv(
+    "BICHO_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if o.strip()]
+
+# Una línea por petición. DEBUG añade el log crudo de http.server.
+LOG_LEVEL = os.getenv("BICHO_LOG_LEVEL", "INFO").upper()
 
 # Tamaño de trozo. Ninguna llamada ve más de esto, así que no hay techo de
 # contexto: el límite de arriba es de tiempo y dinero, no de ventana.
@@ -53,5 +69,3 @@ MAX_CHUNKS_PER_ANSWER = int(os.getenv("BICHO_MAX_CHUNKS", "6"))
 # queda sin documento y devuelve una lista vacía sin un solo error. El tope se
 # declara aquí, y pasarse tiene que doler.
 OLLAMA_MAX_CTX = int(os.getenv("BICHO_OLLAMA_CTX", "16384"))
-
-UI_DIR = Path(__file__).parent / "ui"

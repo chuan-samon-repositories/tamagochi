@@ -9,20 +9,11 @@ es un fichero SQLite).
 
 Tres cosas, en este orden. La tercera no es opcional.
 
-1. **Arreglar los fallos de `docs/known-issues.md`.** Los cuatro primeros. Sin CORS
-   la web de Vercel no puede hablar con el bicho, así que de todas formas no hay
-   despliegue que valga hasta entonces.
+1. **Configurar `BICHO_CORS_ORIGINS`** con el dominio real de Vercel. Por
+   defecto solo deja pasar `localhost:5173`, que es lo que quieres en casa y no
+   lo que quieres en el servidor.
 
-2. **`serve()` abre un navegador al arrancar.** `__main__.main()` llama a `serve()`
-   sin argumentos y el valor por defecto es `open_browser=True`. En un servidor
-   headless eso no tiene sentido. Una línea:
-
-   ```python
-   # apps/bicho/src/bicho/__main__.py
-   serve(open_browser=os.getenv("BICHO_OPEN_BROWSER") == "1")
-   ```
-
-3. **Poner un límite de gasto a la API key de Anthropic.** En cuanto el túnel esté
+2. **Poner un límite de gasto a la API key de Anthropic.** En cuanto el túnel esté
    arriba, `POST /study` es una manera anónima de gastar tu saldo: no hay
    autenticación, no hay rate limit, y cada documento son hasta 100 llamadas
    secuenciales. El límite de gasto en la consola de Anthropic es la red de
@@ -101,9 +92,9 @@ sudo cloudflared service install                 # y dejarlo como servicio
 
 Dos maneras. La segunda es mejor.
 
-**a) CORS.** El bicho manda `Access-Control-Allow-Origin` con el dominio de
-Vercel y responde al preflight `OPTIONS`. Hoy no hace ninguna de las dos
-(`OPTIONS` devuelve `501`, comprobado).
+**a) CORS.** Ya funciona: el bicho responde al preflight `OPTIONS` y devuelve
+`Access-Control-Allow-Origin` para los orígenes de `BICHO_CORS_ORIGINS`. Solo
+hay que añadir ahí el dominio de Vercel.
 
 **b) Rewrite en Vercel — recomendada.** El navegador ve un solo origen y el
 problema de CORS desaparece en vez de gestionarse:
@@ -131,6 +122,9 @@ El cerebro pasa a ser un fichero único en una máquina de casa.
 
 Que Time Machine cubra `~/.bicho/` sirve igual. Lo que no sirve es nada: hoy no
 hay copia.
+
+Y el log tampoco se rota solo: `launchd` no rota nada, así que
+`~/Library/Logs/bicho.log` crece hasta llenar el disco. Está en `TODO.md`.
 
 ## Lo que este montaje te ahorra
 
