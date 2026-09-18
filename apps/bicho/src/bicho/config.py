@@ -65,6 +65,22 @@ CHUNK_CHARS = int(os.getenv("BICHO_CHUNK_CHARS", "4000"))
 # por orden de lectura; elegir los mejores pide embeddings, y ese es el día.
 MAX_CHUNKS_PER_ANSWER = int(os.getenv("BICHO_MAX_CHUNKS", "6"))
 
+# --- el proveedor de mentira (fake.py) ---------------------------------------
+# Solo se miran cuando algún BICHO_MODEL_* lleva el prefijo `fake/`.
+
+# Tardar es parte de lo que hay que probar: con 0 ms, estudiar termina antes del
+# primer sondeo de /v1/study/progress y `reading` y `sorting` no se ven nunca.
+# En los tests y en el grabador de fixtures se pone a 0.
+FAKE_DELAY_MS = int(os.getenv("BICHO_FAKE_DELAY_MS", "120"))
+
+# Revienta al leer el trozo N, para poder probar el rollback y el estado de
+# error de la interfaz. 0 = no falla nunca.
+FAKE_FAIL_AT = int(os.getenv("BICHO_FAKE_FAIL_AT", "0"))
+
+# Una pregunta que la lleve devuelve un 502. Es como se prueba el error del
+# chat sin romper nada de verdad.
+FAKE_FAIL_WORD = os.getenv("BICHO_FAKE_FAIL_WORD", "kaboom")
+
 # Ollama trae 4096 de contexto y corta el prompt en silencio si no cabe: se
 # queda sin documento y devuelve una lista vacía sin un solo error. El tope se
 # declara aquí, y pasarse tiene que doler.

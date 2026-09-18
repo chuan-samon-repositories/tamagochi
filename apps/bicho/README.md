@@ -27,11 +27,13 @@ src/bicho/
   gate.py       ¿Lo sabe? El corazón del proyecto.
   chat.py       Hablar: pasa el gate o responde que no sabe.
   server.py     Los endpoints. Estudiar va en segundo plano.
+  fake.py       Un proveedor que ya se lo sabía todo: el entorno de pruebas.
 tests/
   test_gate.py    El estudio y el gate con un LLM falso. Sin API, sin frameworks.
   test_server.py  CORS, códigos de estado y cuerpos mal formados.
   test_config.py  El lector de .env.
   test_llm.py     El enrutado por prefijo de modelo.
+  test_fake.py    El proveedor falso: schemas, determinismo y cero llamadas.
 ```
 
 ## Cómo funciona
@@ -57,6 +59,35 @@ tests/
 
 El truco no está en el modelo, está en el gate. Un LLM ya sabe matemáticas; lo
 que no puede hacer es contestar si el gate no le deja.
+
+## Sin gastar: `bicho --fake`
+
+```bash
+.venv/bin/bicho --fake        # mismo servidor, mismo contrato, cero tokens
+curl localhost:8777/v1/health # {"fake": true, ...}
+```
+
+`fake/` es un backend más, como `ollama/`: lo elige el prefijo del modelo y no
+hay ningún modo aparte en el resto del código. Estudia, repasa, pasa por el gate
+y contesta igual que el de verdad; lo que devuelve lo saca del propio texto, así
+que cualquier documento da un cerebro creíble.
+
+Se puede mezclar, que es donde más se nota: el gate falso y el chat de verdad
+sirve para afinar `prompts.CHAT` sin pagar una clasificación en cada iteración.
+
+```bash
+BICHO_MODEL_GATE=fake/x .venv/bin/bicho
+```
+
+| Variable | Para qué |
+|---|---|
+| `BICHO_FAKE_DELAY_MS` (120) | Lo que tarda cada respuesta. Con 0, estudiar acaba antes del primer sondeo y `reading`/`sorting` no se ven nunca. |
+| `BICHO_FAKE_FAIL_AT` (0) | Revienta al leer el trozo N. Para probar el rollback. |
+| `BICHO_FAKE_FAIL_WORD` (`kaboom`) | Una pregunta que la lleve devuelve un 502. |
+
+De aquí salen también las fixtures del mock de `apps/web`
+(`python scripts/record-fixtures.py`), que es lo que mantiene las dos mitades
+diciendo lo mismo.
 
 ## Ajustes
 
@@ -105,4 +136,5 @@ for t in tests/*.py; do .venv/bin/python "$t"; done
 ```
 
 Ninguno llama a la API: `test_gate.py` sustituye `llm.ask`/`llm.ask_json` por
-falsos. Que siga siendo así.
+falsos y `test_fake.py` apunta `llm._anthropic`/`llm._ollama` a algo que
+revienta. Que siga siendo así.

@@ -6,16 +6,36 @@ info:
     El cerebro del tamagotchi. Estudia documentos y responde solo sobre lo que
     ha estudiado.
 
-    OBJETIVO, NO ESTADO ACTUAL: la implementación en apps/bicho todavía no
-    cumple esta especificación. Ver contract/README.md para la lista de
-    diferencias pendientes.
+    apps/bicho cumple esta especificación; tests/test_server.py lo comprueba.
+
+    El mismo servidor se puede arrancar con un proveedor de mentira
+    (`bicho --fake`), que responde igual y no gasta tokens. GET /health dice
+    cuál de los dos hay al otro lado.
 servers:
   - url: http://localhost:8777/v1
     description: Desarrollo local
+  - url: /api
+    description: |
+      Producción, vía el rewrite de Vercel a la máquina de casa
+      (deploy/README.md). Mismo origen, así que no hay CORS de por medio.
   - url: https://api.example.com/v1
     description: Mac Mini, detrás de Cloudflare Tunnel (cambiar el hostname)
 
 paths:
+  /health:
+    get:
+      summary: Contra qué cerebro se está hablando
+      description: |
+        `fake: true` significa que los cuatro modelos van por el proveedor de
+        mentira: las respuestas son inventadas y no cuestan nada. La web lo usa
+        para no confundir el cerebro de pruebas con el de verdad.
+      responses:
+        "200":
+          description: Estado del cerebro.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+
   /learned:
     get:
       summary: Qué ha estudiado el bicho
@@ -123,6 +143,22 @@ components:
           type: array
           items: { type: string }
           description: Array, nunca un string con comas.
+
+    Health:
+      type: object
+      required: [fake, models]
+      properties:
+        fake:
+          type: boolean
+          description: true si los cuatro modelos llevan el prefijo `fake/`.
+        models:
+          type: object
+          required: [study, review, gate, chat]
+          properties:
+            study:  { type: string }
+            review: { type: string }
+            gate:   { type: string }
+            chat:   { type: string }
 
     Progress:
       type: object

@@ -9,6 +9,10 @@ contrato es un commit y un PR, no dos que hay que sincronizar a mano.
 
 - [`openapi.yaml`](openapi.yaml) — la especificación, legible por máquina.
 
+`GET /health` dice si al otro lado hay un cerebro de verdad o el de pruebas
+(`bicho --fake`), que sirve el mismo contrato y no gasta tokens. La web lo usa
+para no confundirlos, que es el error que cuesta dinero.
+
 ## Estado: el cerebro ya lo cumple
 
 Lo que antes era una lista de diferencias pendientes está hecho. `apps/bicho`
@@ -25,7 +29,7 @@ costaba cero y no habrá otro momento así.
 |---|---|
 | Autenticación | **Sin decidir.** En cuanto el Mac Mini esté expuesto, `/v1/study` es una manera anónima de gastar saldo de Anthropic. Opciones en [`deploy/README.md`](../deploy/README.md). |
 | Un cerebro por usuario | Hoy hay uno solo y global. Correcto para un bicho personal, no para abrirlo. |
-| Que algo verifique el contrato contra el servidor | CI comprueba que el YAML es válido y que sus `$ref` resuelven, no que el servidor responda lo que promete. Hoy lo cubre `test_server.py` a mano. |
+| Que algo verifique el contrato contra el servidor | **A medias, y ya no a ojo.** `scripts/record-fixtures.py` graba las respuestas de un bicho de verdad (con el proveedor falso) en `apps/web/src/api/fixtures/`, y CI falla si dejan de coincidir: cambiar la forma de una respuesta sin tocar la web es ahora un CI rojo. Lo que sigue sin comprobarse es que esas respuestas cumplan el YAML; eso pide un validador de OpenAPI. |
 
 Detalle en [`docs/known-issues.md`](../docs/known-issues.md) y
 [`TODO.md`](../TODO.md).

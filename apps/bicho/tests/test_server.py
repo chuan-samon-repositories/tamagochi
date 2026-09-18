@@ -114,4 +114,15 @@ _, _, docs = pedir("GET", "/learned")
 assert len(docs) == 1 and docs[0]["concepts"] == ["suma"], docs
 assert docs[0]["title"] == "mates.txt"
 
+# --- /health: contra qué cerebro se está hablando ----------------------------
+status, _, salud = pedir("GET", "/health")
+assert status == 200, status
+assert salud["fake"] is False, "con modelos de verdad configurados, no es el falso"
+assert set(salud["models"]) == {"study", "review", "gate", "chat"}, salud
+
+config.MODEL_STUDY = config.MODEL_REVIEW = "fake/x"
+config.MODEL_GATE = config.MODEL_CHAT = "fake/x"
+_, _, salud = pedir("GET", "/health")
+assert salud["fake"] is True, salud
+
 print("ok")

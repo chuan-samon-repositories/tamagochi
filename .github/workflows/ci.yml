@@ -35,6 +35,7 @@ jobs:
           python apps/bicho/tests/test_gate.py
           python apps/bicho/tests/test_llm.py
           python apps/bicho/tests/test_server.py
+          python apps/bicho/tests/test_fake.py
 
       # Ninguno de los tests llama a la API: test_gate.py usa un LLM falso.
       # Esto lo comprueba, para que no se cuele una llamada de pago en CI.
@@ -42,6 +43,24 @@ jobs:
         env:
           ANTHROPIC_API_KEY: "sk-ant-esto-no-es-una-clave"
         run: python apps/bicho/tests/test_gate.py
+
+  fixtures:
+    name: fixtures de la web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Las fixtures del mock de apps/web se graban de un bicho de verdad
+      # corriendo con el proveedor falso. Si el servidor cambia de forma y las
+      # fixtures no, el mock miente y la interfaz se rompe el día que se
+      # conecte a la API. Aquí se vuelven a grabar y se compara.
+      - name: Las fixtures son lo que el cerebro devuelve hoy
+        env:
+          ANTHROPIC_API_KEY: "sk-ant-esto-no-es-una-clave"
+        run: python scripts/record-fixtures.py --check
 
   web:
     name: apps/web

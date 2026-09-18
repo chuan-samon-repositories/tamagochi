@@ -12,7 +12,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import chat, config, db, study
+from . import chat, config, db, fake, study
 
 log = logging.getLogger("bicho")
 
@@ -40,6 +40,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self._despachar({
+            "/health": _salud,
             "/learned": db.learned,
             "/study/progress": lambda: dict(study.PROGRESO),
         })
@@ -159,6 +160,15 @@ class Handler(BaseHTTPRequestHandler):
         # El log de una línea por petición lo lleva _despachar. Esto es el log
         # crudo de http.server, que solo estorba salvo cuando se depura.
         log.debug(formato, *args)
+
+
+def _salud():
+    """Contra qué cerebro se está hablando. La web lo usa para no confundir el
+    de mentira con el de verdad, que es un error que cuesta dinero."""
+    modelos = {"study": config.MODEL_STUDY, "review": config.MODEL_REVIEW,
+               "gate": config.MODEL_GATE, "chat": config.MODEL_CHAT}
+    return {"fake": all(m.startswith(fake.PREFIJO) for m in modelos.values()),
+            "models": modelos}
 
 
 def serve(port=None, host="127.0.0.1"):

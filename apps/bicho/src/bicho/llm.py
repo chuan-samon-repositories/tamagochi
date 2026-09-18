@@ -2,9 +2,11 @@
 
     claude-sonnet-5        -> API de Anthropic
     ollama/qwen2.5:7b      -> Ollama en local
+    fake/loquesea          -> respuestas de mentira, cero tokens (fake.py)
 
 Así se pueden mezclar sin más configuración: el gate en local y el chat en la
-API es una línea del .env, no un modo aparte.
+API es una línea del .env, no un modo aparte. Y el entorno de pruebas tampoco:
+es el mismo cerebro con otro proveedor.
 """
 import json
 import os
@@ -13,7 +15,7 @@ import urllib.request
 
 import anthropic
 
-from . import config
+from . import config, fake
 
 OLLAMA_PREFIX = "ollama/"
 _client = None
@@ -28,6 +30,8 @@ def client():
 
 def ask(model, system, user, max_tokens=1000, thinking=None):
     """`system` es un str o una lista de bloques (para cache_control)."""
+    if model.startswith(fake.PREFIJO):
+        return fake.ask(system, user)
     if model.startswith(OLLAMA_PREFIX):
         return _ollama(model, system, user, max_tokens)
     r = _anthropic(model, system, user, max_tokens, thinking)
@@ -36,6 +40,8 @@ def ask(model, system, user, max_tokens=1000, thinking=None):
 
 def ask_json(model, system, user, schema, max_tokens=2000, thinking=None):
     """Salida estructurada: la respuesta cumple el schema. Sin reintentos."""
+    if model.startswith(fake.PREFIJO):
+        return fake.ask_json(system, user, schema)
     if model.startswith(OLLAMA_PREFIX):
         raw = _ollama(model, system, user, max_tokens, schema=schema)
     else:
