@@ -11,6 +11,24 @@ importa — `test_gate.py` demuestra que responder manda solo los trozos del tem
 y no el libro. Los tres ficheros de test pasan. Lo de abajo es lo que se rompe
 al salir del caso pequeño.
 
+## Los dos repos de origen están absorbidos del todo
+
+Comprobado el 2026-09-18, por ascendencia de commits y no a ojo. Los dos repos
+de los que salió este monorepo ya no tienen nada que este no tenga, así que se
+pueden dar por superados: lo que se trabaje a partir de ahora va aquí.
+
+| Origen | Estado | Comprobación |
+|---|---|---|
+| `ArnauSamonRos/tamagochi` | Absorbido. Iba **21 commits por delante** (hasta `e911179`) y se fusionó en `apps/web`. | `git merge-base` daba `e6f0383`; los 21 commits están ahora en `main`. |
+| `CarlosChuan/bicho` | Absorbido. **Parado desde el 2026-09-11.** | Su historia entera son dos commits, `6648b47` y `36a2985`, y los dos son ancestros de `main`. `master` es su única rama, y `36a2985` es su punta. |
+
+El de Arnau siguió vivo tres días después del merge inicial porque era el que se
+estaba tocando; todo lo que trajo es visual. El del cerebro no se tocó desde que
+se fusionó.
+
+Detalle de lo que entró con la web, en el propio commit de merge y en
+[la sección de la web](#lado-web) de más abajo.
+
 ## Arreglado
 
 ### 1. El repaso tenía un techo 6× por debajo del máximo configurado
