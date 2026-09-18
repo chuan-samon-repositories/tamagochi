@@ -23,12 +23,33 @@ async function call(path, { method = 'GET', body } = {}) {
     throw new ApiError('offline', 'No consigo hablar con el bicho.', 0)
   }
 
-  const payload = response.status === 204 ? null : await response.json().catch(() => null)
+  // A body that does not parse is `undefined`, not `null`: a 200 carrying
+  // something that is not JSON is a lie, and it has to fail like one. Vercel
+  // answering /api/* with index.html because the rewrite is not configured yet
+  // is exactly that, and letting it through put `null` where the UI expected a
+  // list and took the whole page down with it.
+  const raw = response.status === 204 ? '' : await response.text()
+  let payload = null
+  if (raw) {
+    try {
+      payload = JSON.parse(raw)
+    } catch {
+      payload = undefined
+    }
+  }
+
   if (!response.ok) {
     const error = payload?.error
     throw new ApiError(
       error?.code || 'upstream_failed',
       error?.message || 'Algo ha fallado hablando con el bicho.',
+      response.status,
+    )
+  }
+  if (payload === undefined) {
+    throw new ApiError(
+      'upstream_failed',
+      'Me ha contestado algo que no entiendo. ¿Seguro que ahí hay un bicho?',
       response.status,
     )
   }

@@ -16,7 +16,11 @@ export function useBicho() {
 
   const refresh = useCallback(async () => {
     try {
-      setDocs(await api.learned())
+      // Whatever comes back, the UI gets a list: `docs.length` on something
+      // that is not one takes down the whole page, and the brain is the half
+      // most likely to be misconfigured.
+      const listed = await api.learned()
+      setDocs(Array.isArray(listed) ? listed : [])
     } catch {
       // A brain we cannot list is not worth an error banner: asking it
       // something will say so far more clearly.

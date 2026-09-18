@@ -17,10 +17,12 @@ const OPTIONS = [
   },
 ]
 
+// Always rendered, on purpose. This used to hide itself in a production build
+// once you were on the real brain, on the theory that it had nothing left to
+// say — but it is the only way back, so switching to `live` from a preview
+// stranded you on the expensive brain unless you knew to type ?api=mock. The
+// switch is only useful while it is the thing you can still reach.
 export function SourceBadge() {
-  // A production build already talking to the real brain has nothing to say.
-  if (source === 'live' && !import.meta.env.DEV) return null
-
   return (
     <div className="source-switch" role="group" aria-label="Con qué bicho hablar">
       {OPTIONS.map((option) => {
