@@ -14,7 +14,15 @@ npm run build
 
 **El bicho del preview es de mentira.** Contesta, aprende lo que le des y se
 queda con ello, pero se lo está inventando: no llama a ningún modelo y no cuesta
-un céntimo. Arriba a la derecha pone «de mentira» para que no haya dudas.
+un céntimo.
+
+Abajo a la izquierda hay dos botones que dicen con cuál estás hablando y sirven
+para cambiar. El que está encendido es el que contesta:
+
+- **DE MENTIRA** (en negro) — el de siempre, el que no gasta nada.
+- **DE VERDAD** (en naranja) — el bicho de casa de Carlos. Sabe de verdad lo que
+  ha estudiado, y cada pregunta cuesta dinero. En naranja para que se vea de
+  lejos que está puesto.
 
 Así que se puede trastear todo lo que haga falta: darle documentos, preguntarle,
 reiniciarlo y volver a empezar.
@@ -30,9 +38,10 @@ Tres palabras mágicas, para ver cosas que si no cuesta pillar:
 El botón de reiniciar (arriba a la derecha) devuelve al huevo **y** deja el
 cerebro como estaba: vuelve a saber solo el libro de sumas y restas.
 
-Para hablar con el bicho de verdad —el de casa de Carlos, que sí cuesta dinero—
-se añade `?api=live` al final de la dirección. Con `?api=mock` se vuelve. La
-elección se recuerda entre recargas.
+Los dos botones son lo mismo que añadir `?api=live` o `?api=mock` al final de la
+dirección, por si te pasan un enlace ya puesto. La elección se recuerda entre
+recargas, así que si un día todo va lento, mira antes de nada cuál de los dos
+está encendido.
 
 ## Cómo habla con el cerebro
 
