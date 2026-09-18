@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { blobatar } from 'blobatar'
 import { unsure } from 'blobatar/expression'
+import terrainBg from './assets/terrain-bg.webp'
+import nestImage from './assets/nest.webp'
+import eggOnlyImage from './assets/egg-only.webp'
 import './App.css'
 
 function randomSeed() {
@@ -19,18 +22,76 @@ function BlobFigure({ seed, expression, className }) {
   return <div className={className} dangerouslySetInnerHTML={{ __html: markup }} />
 }
 
-const BALL_SIZE = 64
+function TerrainBackground() {
+  return <div className="terrain-bg" style={{ backgroundImage: `url(${terrainBg})` }} aria-hidden="true" />
+}
+
+function buildSpiralPath(turns = 2.4, steps = 48, maxR = 10) {
+  let d = ''
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps
+    const theta = t * Math.PI * 2 * turns
+    const r = t * maxR
+    const x = 12 + r * Math.cos(theta)
+    const y = 12 + r * Math.sin(theta)
+    d += `${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${y.toFixed(2)} `
+  }
+  return d.trim()
+}
+
+const SPIRAL_PATH = buildSpiralPath()
+
+function DizzyEyes() {
+  return (
+    <div className="dizzy-eyes" aria-hidden="true">
+      <span className="dizzy-eye dizzy-eye--left">
+        <span className="dizzy-eye-spin">
+          <svg viewBox="0 0 24 24" width="100%" height="100%">
+            <path d={SPIRAL_PATH} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+          </svg>
+        </span>
+      </span>
+      <span className="dizzy-eye dizzy-eye--right">
+        <span className="dizzy-eye-spin">
+          <svg viewBox="0 0 24 24" width="100%" height="100%">
+            <path d={SPIRAL_PATH} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+          </svg>
+        </span>
+      </span>
+    </div>
+  )
+}
+
+const BALL_SIZE = 128
 const EDGE_MARGIN = 16
 const OBSTACLE_PADDING = 16
-const HOP_MIN_DIST = 55
-const HOP_MAX_DIST = 130
-const HOP_HEIGHT = 32
-const HOP_MS_PER_PX = 4.2
-const HOP_DURATION_MIN = 360
+const HOP_MIN_DIST = 100
+const HOP_MAX_DIST = 230
+const HOP_HEIGHT = 13
+const HOP_MS_PER_PX = 3.2
+const HOP_DURATION_MIN = 320
 const HOP_DURATION_MAX = 620
 const IDLE_MIN = 120
 const IDLE_MAX = 420
 const MAX_TILT = 16
+const DRAG_LIFT = 20
+const DRAG_MOVE_THRESHOLD = 6
+const DIZZY_SPIN_THRESHOLD = Math.PI * 5
+const DIZZY_SPEED_THRESHOLD = 1.1
+const DIZZY_DURATION = 2800
+
+const DUST_PARTICLES = [
+  { dx: -48, dy: -8, size: 11, delay: 0 },
+  { dx: -34, dy: -24, size: 7, delay: 25 },
+  { dx: -14, dy: -30, size: 9, delay: 10 },
+  { dx: 10, dy: -32, size: 8, delay: 15 },
+  { dx: 30, dy: -24, size: 10, delay: 35 },
+  { dx: 48, dy: -6, size: 11, delay: 0 },
+  { dx: -24, dy: 6, size: 7, delay: 45 },
+  { dx: 24, dy: 8, size: 7, delay: 45 },
+  { dx: -6, dy: -18, size: 6, delay: 55 },
+  { dx: 6, dy: -16, size: 6, delay: 55 },
+]
 
 function easeInOutSine(t) {
   return -(Math.cos(Math.PI * t) - 1) / 2
@@ -69,6 +130,7 @@ function pickHopTarget(x, y) {
   const maxY = window.innerHeight - BALL_SIZE - EDGE_MARGIN
   const sidebarRect = document.querySelector('.sidebar')?.getBoundingClientRect()
   const composerRect = document.querySelector('.composer')?.getBoundingClientRect()
+  const orbRect = document.querySelector('.orb-cluster')?.getBoundingClientRect()
 
   for (let attempt = 0; attempt < 8; attempt++) {
     const angle = Math.random() * Math.PI * 2
@@ -78,8 +140,9 @@ function pickHopTarget(x, y) {
 
     const p1 = pushOutOfRect(tx, ty, sidebarRect)
     const p2 = pushOutOfRect(p1.x, p1.y, composerRect)
-    tx = clamp(p2.x, EDGE_MARGIN, maxX)
-    ty = clamp(p2.y, EDGE_MARGIN, maxY)
+    const p3 = pushOutOfRect(p2.x, p2.y, orbRect)
+    tx = clamp(p3.x, EDGE_MARGIN, maxX)
+    ty = clamp(p3.y, EDGE_MARGIN, maxY)
 
     if (Math.hypot(tx - x, ty - y) > 8) {
       return { x: tx, y: ty }
@@ -93,12 +156,26 @@ function BouncingBall({ onClick, confused, seed }) {
   const tiltRef = useRef(null)
   const ballRef = useRef(null)
   const bubbleRef = useRef(null)
+  const shadowRef = useRef(null)
+  const dustRef = useRef(null)
+  const pausedRef = useRef(confused)
+  const dragMovedRef = useRef(false)
+  const [dizzy, setDizzy] = useState(false)
+  const dizzyTimeoutRef = useRef(null)
+
+  useEffect(() => {
+    pausedRef.current = confused || dizzy
+  }, [confused, dizzy])
+
+  useEffect(() => () => clearTimeout(dizzyTimeoutRef.current), [])
 
   useEffect(() => {
     const wrap = wrapRef.current
     const tilt = tiltRef.current
     const ball = ballRef.current
     const bubble = bubbleRef.current
+    const shadow = shadowRef.current
+    const dust = dustRef.current
     if (!wrap || !tilt || !ball) return
 
     let x = window.innerWidth / 2 - BALL_SIZE / 2
@@ -109,21 +186,36 @@ function BouncingBall({ onClick, confused, seed }) {
     let hopFrom = { x, y }
     let hopTo = { x, y }
     let hopDuration = 0
+    let hopHeight = HOP_HEIGHT
     let tiltDeg = 0
     let raf
+
+    const spawnDust = (cx, cy) => {
+      if (!dust) return
+      dust.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`
+      dust.classList.remove('dust-burst--play')
+      // eslint-disable-next-line no-unused-expressions
+      dust.offsetWidth
+      dust.classList.add('dust-burst--play')
+    }
 
     const tick = (now) => {
       const elapsed = now - phaseStart
 
       let bob = 0
+      let arcHeight = 0
 
-      if (phase === 'idle') {
+      if (phase === 'drag') {
+        arcHeight = DRAG_LIFT
+        ball.className = 'ball'
+      } else if (phase === 'idle') {
         bob = Math.sin(elapsed / 190) * 1.5
-        if (elapsed >= idleDuration) {
+        if (elapsed >= idleDuration && !pausedRef.current) {
           hopFrom = { x, y }
           hopTo = pickHopTarget(x, y)
           const dist = Math.hypot(hopTo.x - hopFrom.x, hopTo.y - hopFrom.y)
           hopDuration = clamp(dist * HOP_MS_PER_PX, HOP_DURATION_MIN, HOP_DURATION_MAX)
+          hopHeight = HOP_HEIGHT * (0.8 + Math.random() * 0.4)
           tiltDeg = clamp(((hopTo.x - hopFrom.x) / dist || 0) * MAX_TILT, -MAX_TILT, MAX_TILT)
           phase = 'hop'
           phaseStart = now
@@ -131,8 +223,9 @@ function BouncingBall({ onClick, confused, seed }) {
       } else {
         const t = clamp(elapsed / hopDuration, 0, 1)
         const horizT = easeInOutSine(t)
+        arcHeight = Math.sin(t * Math.PI) * hopHeight
         x = hopFrom.x + (hopTo.x - hopFrom.x) * horizT
-        y = hopFrom.y + (hopTo.y - hopFrom.y) * horizT - Math.sin(t * Math.PI) * HOP_HEIGHT
+        y = hopFrom.y + (hopTo.y - hopFrom.y) * horizT - arcHeight
 
         if (t < 0.12) {
           ball.className = 'ball ball--crouch'
@@ -150,6 +243,7 @@ function BouncingBall({ onClick, confused, seed }) {
           idleDuration = IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN)
           tiltDeg = 0
           ball.className = 'ball ball--land'
+          spawnDust(x + BALL_SIZE / 2, y + BALL_SIZE * 0.92)
           setTimeout(() => {
             if (ball) ball.className = 'ball'
           }, 140)
@@ -159,18 +253,145 @@ function BouncingBall({ onClick, confused, seed }) {
       wrap.style.transform = `translate(${x}px, ${y + bob}px)`
       tilt.style.transform = `rotate(${tiltDeg}deg)`
       if (bubble) {
-        bubble.style.transform = `translate(${x + BALL_SIZE / 2 - 13}px, ${y + bob - 30}px)`
+        bubble.style.transform = `translate(${x + BALL_SIZE / 2 - 16}px, ${y + bob - 40}px)`
+      }
+      if (shadow) {
+        const groundY = y + arcHeight
+        const shrink = clamp(1 - arcHeight / (hopHeight * 3.2), 0.82, 1)
+        const shadowCx = x + BALL_SIZE / 2
+        // Follows most of the way up with the creature instead of staying
+        // pinned to the ground, so it never visibly detaches mid-hop.
+        const shadowCy = groundY + BALL_SIZE * 0.92 - arcHeight * 0.55
+        shadow.style.transform =
+          `translate(${shadowCx}px, ${shadowCy}px) translate(-50%, -50%) scale(${shrink})`
+        shadow.style.opacity = 0.55 * shrink
       }
 
       raf = requestAnimationFrame(tick)
     }
 
     raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+
+    let dragActive = false
+    let dragPointerId = null
+    let dragGrabDx = 0
+    let dragGrabDy = 0
+    let dragStartClientX = 0
+    let dragStartClientY = 0
+    let dragStartTime = 0
+    let dragPathLen = 0
+    let dragSpinAccum = 0
+    let dragHasLastVec = false
+    let dragLastVecX = 0
+    let dragLastVecY = 0
+
+    const handlePointerDown = (e) => {
+      if (e.button !== undefined && e.button !== 0) return
+      dragActive = true
+      dragPointerId = e.pointerId
+      dragGrabDx = e.clientX - x
+      dragGrabDy = e.clientY - y
+      dragStartClientX = e.clientX
+      dragStartClientY = e.clientY
+      dragStartTime = performance.now()
+      dragPathLen = 0
+      dragSpinAccum = 0
+      dragHasLastVec = false
+      dragMovedRef.current = false
+      phase = 'drag'
+      wrap.setPointerCapture(e.pointerId)
+    }
+
+    const handlePointerMove = (e) => {
+      if (!dragActive || e.pointerId !== dragPointerId) return
+      const maxX = window.innerWidth - BALL_SIZE - EDGE_MARGIN
+      const maxY = window.innerHeight - BALL_SIZE - EDGE_MARGIN
+      const groundX = clamp(e.clientX - dragGrabDx, EDGE_MARGIN, maxX)
+      const groundY = clamp(e.clientY - dragGrabDy, EDGE_MARGIN, maxY)
+      tiltDeg = clamp((e.movementX || 0) * 1.4, -MAX_TILT, MAX_TILT)
+      x = groundX
+      y = groundY - DRAG_LIFT
+      if (Math.hypot(e.clientX - dragStartClientX, e.clientY - dragStartClientY) > DRAG_MOVE_THRESHOLD) {
+        dragMovedRef.current = true
+      }
+
+      const vecX = e.movementX || 0
+      const vecY = e.movementY || 0
+      const dist = Math.hypot(vecX, vecY)
+      dragPathLen += dist
+      if (dragHasLastVec && dist > 0.5 && Math.hypot(dragLastVecX, dragLastVecY) > 0.5) {
+        const angle1 = Math.atan2(dragLastVecY, dragLastVecX)
+        const angle2 = Math.atan2(vecY, vecX)
+        let delta = angle2 - angle1
+        while (delta > Math.PI) delta -= Math.PI * 2
+        while (delta < -Math.PI) delta += Math.PI * 2
+        dragSpinAccum += Math.abs(delta)
+      }
+      if (dist > 0.5) {
+        dragLastVecX = vecX
+        dragLastVecY = vecY
+        dragHasLastVec = true
+      }
+    }
+
+    const endDrag = (e) => {
+      if (!dragActive || e.pointerId !== dragPointerId) return
+      dragActive = false
+      if (wrap.hasPointerCapture?.(e.pointerId)) {
+        wrap.releasePointerCapture(e.pointerId)
+      }
+      y += DRAG_LIFT
+      phase = 'idle'
+      phaseStart = performance.now()
+      idleDuration = IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN)
+      tiltDeg = 0
+      ball.className = 'ball ball--land'
+      spawnDust(x + BALL_SIZE / 2, y + BALL_SIZE * 0.92)
+      setTimeout(() => {
+        if (ball) ball.className = 'ball'
+      }, 140)
+
+      const dragElapsed = Math.max(performance.now() - dragStartTime, 1)
+      const avgSpeed = dragPathLen / dragElapsed
+      if (dragSpinAccum > DIZZY_SPIN_THRESHOLD && avgSpeed > DIZZY_SPEED_THRESHOLD) {
+        setDizzy(true)
+        clearTimeout(dizzyTimeoutRef.current)
+        dizzyTimeoutRef.current = setTimeout(() => setDizzy(false), DIZZY_DURATION)
+      }
+    }
+
+    wrap.addEventListener('pointerdown', handlePointerDown)
+    wrap.addEventListener('pointermove', handlePointerMove)
+    wrap.addEventListener('pointerup', endDrag)
+    wrap.addEventListener('pointercancel', endDrag)
+
+    return () => {
+      cancelAnimationFrame(raf)
+      wrap.removeEventListener('pointerdown', handlePointerDown)
+      wrap.removeEventListener('pointermove', handlePointerMove)
+      wrap.removeEventListener('pointerup', endDrag)
+      wrap.removeEventListener('pointercancel', endDrag)
+    }
   }, [])
 
   return (
     <>
+      <div ref={shadowRef} className="ball-shadow" aria-hidden="true" />
+      <div ref={dustRef} className="dust-burst" aria-hidden="true">
+        {DUST_PARTICLES.map((p, i) => (
+          <span
+            key={i}
+            className="dust-particle"
+            style={{
+              width: p.size,
+              height: p.size,
+              '--dx': `${p.dx}px`,
+              '--dy': `${p.dy}px`,
+              animationDelay: `${p.delay}ms`,
+            }}
+          />
+        ))}
+      </div>
       <div ref={bubbleRef} className="ball-bubble-wrap" aria-hidden="true">
         <div className={`ball-bubble ${confused ? 'ball-bubble--visible' : ''}`}>?</div>
       </div>
@@ -178,7 +399,13 @@ function BouncingBall({ onClick, confused, seed }) {
         ref={wrapRef}
         type="button"
         className="ball-wrap"
-        onClick={onClick}
+        onClick={(e) => {
+          if (dragMovedRef.current) {
+            dragMovedRef.current = false
+            return
+          }
+          onClick?.(e)
+        }}
         aria-label="Ver estadísticas"
       >
         <div ref={tiltRef} className="ball-tilt">
@@ -186,8 +413,9 @@ function BouncingBall({ onClick, confused, seed }) {
             <BlobFigure
               seed={seed}
               expression={confused ? unsure : undefined}
-              className="blob-figure"
+              className={`blob-figure ${dizzy ? 'blob-figure--hide-eyes' : ''}`}
             />
+            {dizzy && <DizzyEyes />}
           </div>
         </div>
       </button>
@@ -196,10 +424,14 @@ function BouncingBall({ onClick, confused, seed }) {
 }
 
 const stats = [
-  { label: 'Vida', value: 86, tone: 'life', icon: '❤️' },
-  { label: 'Gana / Sed', value: 54, tone: 'hunger', icon: '🍗' },
   { label: 'Energía', value: 32, tone: 'energy', icon: '⚡' },
   { label: 'Salud mental', value: 45, tone: 'sanity', icon: '🧠' },
+]
+
+const orbStats = [
+  { label: 'Vida', value: 86, tone: 'life' },
+  { label: 'Hambre', value: 54, tone: 'hunger' },
+  { label: 'Sed', value: 68, tone: 'thirst' },
 ]
 
 const intelligences = [
@@ -312,6 +544,31 @@ function IntelligenceStat() {
   )
 }
 
+function Orb({ label, value, tone }) {
+  return (
+    <div className={`orb orb--${tone}`} aria-label={`${label}: ${value}%`}>
+      <div className="orb-clip">
+        <div className="orb-fill" style={{ height: `${value}%` }}>
+          <span className="orb-wave-strip orb-wave-strip--1" />
+          <span className="orb-wave-strip orb-wave-strip--2" />
+        </div>
+        <span className="orb-sheen" aria-hidden="true" />
+        <span className="orb-percent">{value}%</span>
+      </div>
+    </div>
+  )
+}
+
+function OrbCluster() {
+  return (
+    <div className="orb-cluster">
+      {orbStats.map((orb) => (
+        <Orb key={orb.label} {...orb} />
+      ))}
+    </div>
+  )
+}
+
 function Sidebar({ expanded, onToggle, name, seed }) {
   return (
     <aside className={`sidebar ${expanded ? 'sidebar--expanded' : 'sidebar--collapsed'}`}>
@@ -348,8 +605,6 @@ function Sidebar({ expanded, onToggle, name, seed }) {
           <p className="sidebar-section-label">Estadísticas</p>
           <StatBar {...stats[0]} />
           <StatBar {...stats[1]} />
-          <StatBar {...stats[2]} />
-          <StatBar {...stats[3]} />
           <IntelligenceStat />
         </div>
       </div>
@@ -358,14 +613,6 @@ function Sidebar({ expanded, onToggle, name, seed }) {
 }
 
 const HATCH_CLICKS = 10
-const SPECKLE_TONES = ['life', 'hunger', 'energy', 'mind', 'sanity']
-const SPECKLES = [
-  { top: '28%', left: '32%', size: 7, tone: 0 },
-  { top: '48%', left: '64%', size: 6, tone: 3 },
-  { top: '62%', left: '38%', size: 5, tone: 2 },
-  { top: '38%', left: '54%', size: 4, tone: 4 },
-  { top: '58%', left: '58%', size: 5, tone: 1 },
-]
 
 function EggNest({ onHatch }) {
   const [clicks, setClicks] = useState(0)
@@ -380,68 +627,40 @@ function EggNest({ onHatch }) {
 
     if (next >= HATCH_CLICKS) {
       setHatching(true)
-      setTimeout(onHatch, 550)
+      setTimeout(onHatch, 620)
     }
   }
 
   return (
-    <div className="egg-scene">
-      <svg className="nest" viewBox="0 0 200 90" aria-hidden="true">
-        <ellipse cx="100" cy="60" rx="95" ry="26" fill="url(#nestBase)" />
-        <ellipse cx="100" cy="48" rx="78" ry="22" fill="url(#nestRim)" />
-        <defs>
-          <linearGradient id="nestBase" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#d9bd93" />
-            <stop offset="100%" stopColor="#c7a374" />
-          </linearGradient>
-          <linearGradient id="nestRim" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f0dcb8" />
-            <stop offset="100%" stopColor="#dcbe8f" />
-          </linearGradient>
-        </defs>
-        {Array.from({ length: 16 }).map((_, i) => (
-          <ellipse
-            key={i}
-            cx={100 + Math.cos((i / 16) * Math.PI * 2) * 76}
-            cy={50 + Math.sin((i / 16) * Math.PI * 2) * 20}
-            rx="14"
-            ry="3.4"
-            fill="#b8935f"
-            opacity="0.55"
-            transform={`rotate(${(i / 16) * 360} ${
-              100 + Math.cos((i / 16) * Math.PI * 2) * 76
-            } ${50 + Math.sin((i / 16) * Math.PI * 2) * 20})`}
-          />
-        ))}
-      </svg>
+    <>
+      <div className={`hatch-backdrop ${hatching ? 'hatch-backdrop--active' : ''}`} aria-hidden="true" />
+      <div className={`egg-scene ${hatching ? 'egg-scene--hatching' : ''}`}>
+        <img className="nest-layer" src={nestImage} alt="" aria-hidden="true" />
 
-      <button
-        type="button"
-        className="egg-button"
-        onClick={handleClick}
-        aria-label="Toca el huevo para incubarlo"
-      >
-        <div key={shakeKey} className={`egg ${hatching ? 'egg--hatch' : 'egg--shake'}`}>
-          {SPECKLES.map((s, i) => (
-            <span
-              key={i}
-              className={`egg-speckle egg-speckle--${SPECKLE_TONES[s.tone]}`}
-              style={{ top: s.top, left: s.left, width: s.size, height: s.size }}
-            />
+        <button
+          type="button"
+          className="egg-button"
+          onClick={handleClick}
+          aria-label="Toca el huevo para incubarlo"
+        >
+          <div
+            key={shakeKey}
+            className={`egg ${hatching ? 'egg--hatch' : 'egg--shake'}`}
+            style={{ backgroundImage: `url(${eggOnlyImage})` }}
+          >
+            {clicks >= 3 && <span className="egg-crack egg-crack--1" />}
+            {clicks >= 6 && <span className="egg-crack egg-crack--2" />}
+            {clicks >= 9 && <span className="egg-crack egg-crack--3" />}
+          </div>
+        </button>
+
+        <div className="egg-progress" aria-hidden="true">
+          {Array.from({ length: HATCH_CLICKS }).map((_, i) => (
+            <span key={i} className={`egg-dot ${i < clicks ? 'egg-dot--filled' : ''}`} />
           ))}
-          {clicks >= 3 && <span className="egg-crack egg-crack--1" />}
-          {clicks >= 6 && <span className="egg-crack egg-crack--2" />}
-          {clicks >= 9 && <span className="egg-crack egg-crack--3" />}
         </div>
-      </button>
-
-      <div className="egg-progress" aria-hidden="true">
-        {Array.from({ length: HATCH_CLICKS }).map((_, i) => (
-          <span key={i} className={`egg-dot ${i < clicks ? 'egg-dot--filled' : ''}`} />
-        ))}
       </div>
-      <p className="egg-hint">Toca el huevo para incubarlo</p>
-    </div>
+    </>
   )
 }
 
@@ -546,6 +765,8 @@ function App() {
 
   return (
     <div className="app">
+      <TerrainBackground />
+
       <button
         type="button"
         className="reset-button"
@@ -573,6 +794,8 @@ function App() {
           seed={creatureSeed}
         />
       )}
+
+      {hasCreature && <OrbCluster />}
 
       {stage === 'egg' && <EggNest onHatch={handleHatch} />}
       {stage === 'naming' && (
