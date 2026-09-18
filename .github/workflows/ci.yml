@@ -53,6 +53,11 @@ jobs:
         with:
           python-version: "3.12"
 
+      # El grabador arranca el servidor de verdad, y server.py llega hasta
+      # llm.py, que importa `anthropic` aunque luego no llame a nadie.
+      - name: Install (versiones exactas del lockfile)
+        run: pip install -r apps/bicho/requirements.lock
+
       # Las fixtures del mock de apps/web se graban de un bicho de verdad
       # corriendo con el proveedor falso. Si el servidor cambia de forma y las
       # fixtures no, el mock miente y la interfaz se rompe el día que se
