@@ -17,10 +17,10 @@ o `todo` cuando toca las dos mitades.
 - [ ] **(web) Pantalla para dar de comer.** No hay ningún input de fichero ni de
       texto para `/v1/study`.
 - [ ] **(web) Sitio donde se lea la respuesta.** La única salida hoy es una
-      burbuja de 26 px con un `"?"`; no cabe una frase.
+      burbuja de 32 px con un `"?"`; no cabe una frase.
 - [ ] **(web) Sacar `localStorage` del inicializador de `useState`**
-      (`src/App.jsx:487-493`) y hacer reactivo `intelligenceAverage`
-      (`src/App.jsx:220`), que está congelado desde que se importa el módulo.
+      (`src/App.jsx:706-712`) y hacer reactivo `intelligenceAverage`
+      (`src/App.jsx:452`), que está congelado desde que se importa el módulo.
 
 ## Observabilidad
 
@@ -54,10 +54,12 @@ Detalle y reproducción en [`docs/known-issues.md`](docs/known-issues.md).
       los `ON DELETE CASCADE` del esquema son inertes en el resto.
 - [ ] **(api) `journal_mode=WAL`.** Ahora es `delete`: quien escribe bloquea a
       quien lee, y `/study` escribe cada pocos segundos mientras `/ask` lee.
-- [ ] **(web) Accesibilidad:** `prefers-reduced-motion` (no hay ni una regla en
-      892 líneas de CSS, y el único control para abrir las estadísticas es un
-      botón que no para de moverse), `inert` en los paneles colapsados,
-      `lang="es"`, y anillos de `:focus-visible`.
+- [ ] **(web) Accesibilidad:** `prefers-reduced-motion` (hay una sola regla en
+      1.147 líneas de CSS y solo cubre las dos ondas de los orbes: el resto de
+      las ~32 animaciones y transiciones no la miran, y el único control para
+      abrir las estadísticas sigue siendo un botón que no para de moverse),
+      `inert` en los paneles colapsados, `lang="es"`, y anillos de
+      `:focus-visible`.
 - [ ] **(web) Partir `App.jsx`** por las costuras antes de meterle la capa de
       datos, no después.
 

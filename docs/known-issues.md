@@ -133,16 +133,22 @@ independientes entre sí, así que además se podrían lanzar en paralelo.
 
 ## Lado web
 
-Nada de esto se ha tocado. Lo esencial:
+La UI sí se ha movido desde esta revisión: `apps/web` incorpora ahora los 21
+commits que `ArnauSamonRos/tamagochi` siguió acumulando (arrastrar al bicho,
+mareo, fondo de terreno, orbes de Vida/Hambre/Sed, física del salto). Todos son
+visuales: ninguno toca nada de lo de abajo, salvo la primera regla de
+`prefers-reduced-motion`. Lo esencial:
 
 - **No existe ninguna capa de datos.** Ni `fetch`, ni URL base, ni datos falsos.
   Todas las estadísticas son constantes de módulo.
 - **Faltan dos pantallas enteras**: no hay ningún input de fichero ni de texto
-  para `/v1/study`, y la única superficie de salida es una burbuja de 26 px con
+  para `/v1/study`, y la única superficie de salida es una burbuja de 32 px con
   el carácter `"?"` — no cabe una respuesta.
-- `intelligenceAverage` (`src/App.jsx:220`) se calcula **al importar el módulo**:
+- `intelligenceAverage` (`src/App.jsx:452`) se calcula **al importar el módulo**:
   está congelado en 61 para siempre.
-- `localStorage` dentro del inicializador de `useState` (`src/App.jsx:487-493`).
-- Cero `prefers-reduced-motion` en 892 líneas de CSS, y el **único** control para
-  abrir las estadísticas es un botón que no para de moverse.
+- `localStorage` dentro del inicializador de `useState` (`src/App.jsx:706-712`).
+- Una sola regla de `prefers-reduced-motion` en 1.147 líneas de CSS, y solo cubre
+  las dos ondas de los orbes: las ~32 animaciones y transiciones restantes no la
+  miran, y el **único** control para abrir las estadísticas sigue siendo un botón
+  que no para de moverse.
 - `<html lang="en">` con todo el texto en español.

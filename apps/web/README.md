@@ -17,9 +17,9 @@ sirve `apps/bicho` en `http://localhost:8777`.
 
 **Hoy no habla.** No hay capa de datos: ni `fetch`, ni URL base, ni datos
 falsos. Todas las estadísticas de la barra lateral son constantes de módulo
-(`src/App.jsx:198-222`), y faltan dos pantallas enteras — no hay ninguna entrada
+(`src/App.jsx:426-454`), y faltan dos pantallas enteras — no hay ninguna entrada
 de fichero o texto para `/study`, y la única superficie de salida es una burbuja
-de 26 px con un `"?"`, donde no cabe una respuesta. Ver
+de 32 px con un `"?"`, donde no cabe una respuesta. Ver
 [`docs/known-issues.md`](../../docs/known-issues.md).
 
 Para desarrollo, evita CORS con un proxy en `vite.config.js`:
