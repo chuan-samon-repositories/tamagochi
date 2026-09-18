@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { blobatar } from 'blobatar'
 import { unsure } from 'blobatar/expression'
+import { AnswerPanel } from './components/AnswerPanel'
+import { FeedModal } from './components/FeedModal'
+import { SourceBadge } from './components/SourceBadge'
+import { useBicho } from './useBicho'
 import terrainBg from './assets/terrain-bg.webp'
 import nestImage from './assets/nest.webp'
 import eggOnlyImage from './assets/egg-only.webp'
@@ -131,6 +135,7 @@ function pickHopTarget(x, y) {
   const sidebarRect = document.querySelector('.sidebar')?.getBoundingClientRect()
   const composerRect = document.querySelector('.composer')?.getBoundingClientRect()
   const orbRect = document.querySelector('.orb-cluster')?.getBoundingClientRect()
+  const answerRect = document.querySelector('.answer-panel')?.getBoundingClientRect()
 
   for (let attempt = 0; attempt < 8; attempt++) {
     const angle = Math.random() * Math.PI * 2
@@ -141,8 +146,9 @@ function pickHopTarget(x, y) {
     const p1 = pushOutOfRect(tx, ty, sidebarRect)
     const p2 = pushOutOfRect(p1.x, p1.y, composerRect)
     const p3 = pushOutOfRect(p2.x, p2.y, orbRect)
-    tx = clamp(p3.x, EDGE_MARGIN, maxX)
-    ty = clamp(p3.y, EDGE_MARGIN, maxY)
+    const p4 = pushOutOfRect(p3.x, p3.y, answerRect)
+    tx = clamp(p4.x, EDGE_MARGIN, maxX)
+    ty = clamp(p4.y, EDGE_MARGIN, maxY)
 
     if (Math.hypot(tx - x, ty - y) > 8) {
       return { x: tx, y: ty }
@@ -569,7 +575,7 @@ function OrbCluster() {
   )
 }
 
-function Sidebar({ expanded, onToggle, name, seed }) {
+function Sidebar({ expanded, onToggle, name, seed, docs, onFeed }) {
   return (
     <aside className={`sidebar ${expanded ? 'sidebar--expanded' : 'sidebar--collapsed'}`}>
       <button
@@ -606,6 +612,23 @@ function Sidebar({ expanded, onToggle, name, seed }) {
           <StatBar {...stats[0]} />
           <StatBar {...stats[1]} />
           <IntelligenceStat />
+
+          <p className="sidebar-section-label">Lo que ha estudiado</p>
+          {docs.length === 0 ? (
+            <p className="sidebar-empty">Todavía nada. Está en blanco.</p>
+          ) : (
+            <ul className="sidebar-docs">
+              {docs.map((doc) => (
+                <li className="sidebar-doc" key={doc.id}>
+                  <span className="sidebar-doc-title">{doc.title}</span>
+                  <span className="sidebar-doc-count">{doc.concepts.length}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <button type="button" className="sidebar-feed" onClick={onFeed}>
+            Dale de comer
+          </button>
         </div>
       </div>
     </aside>
@@ -723,6 +746,9 @@ function App() {
     localStorage.removeItem('tamagochi:stage')
     localStorage.removeItem('tamagochi:name')
     localStorage.removeItem('tamagochi:seed')
+    // The test brain goes back to its seed too, so "reset" means the same
+    // thing whichever half you are looking at. On the real one this is a no-op.
+    localStorage.removeItem('bicho:mock')
     window.location.reload()
   }
 
@@ -734,12 +760,16 @@ function App() {
   }
 
   const [reacting, setReacting] = useState(false)
+  const [feeding, setFeeding] = useState(false)
   const reactTimeoutRef = useRef(null)
+  const bicho = useBicho()
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!message.trim()) return
+    const question = message.trim()
+    if (!question) return
     setMessage('')
+    bicho.ask(question)
 
     setReacting(true)
     clearTimeout(reactTimeoutRef.current)
@@ -766,6 +796,7 @@ function App() {
   return (
     <div className="app">
       <TerrainBackground />
+      <SourceBadge />
 
       <button
         type="button"
@@ -792,6 +823,8 @@ function App() {
           onToggle={() => setExpanded((e) => !e)}
           name={creatureName}
           seed={creatureSeed}
+          docs={bicho.docs}
+          onFeed={() => setFeeding(true)}
         />
       )}
 
@@ -810,8 +843,26 @@ function App() {
         />
       )}
 
+      {hasCreature && feeding && (
+        <FeedModal
+          progress={bicho.progress}
+          error={bicho.error}
+          onStudy={bicho.study}
+          onClose={() => {
+            setFeeding(false)
+            bicho.dismiss()
+          }}
+        />
+      )}
+
       {hasCreature && (
       <div className="composer-dock">
+        <AnswerPanel
+          exchange={bicho.exchange}
+          asking={bicho.asking}
+          error={feeding ? null : bicho.error}
+          onDismiss={bicho.dismiss}
+        />
         <form className="composer" onSubmit={handleSubmit}>
           <svg
             className="composer-icon"

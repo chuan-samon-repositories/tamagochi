@@ -1,0 +1,11 @@
+{
+  "_comentario": [
+    "Cópialo a vercel.json cuando el túnel del Mac Mini esté arriba y cambia",
+    "el hostname. Sirve /api desde el mismo origen que la web, así que ?api=live",
+    "funciona también desde un preview, cuyo dominio por rama no puede estar en",
+    "BICHO_CORS_ORIGINS. Ver deploy/README.md."
+  ],
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://bicho.TU_DOMINIO.com/v1/:path*" }
+  ]
+}

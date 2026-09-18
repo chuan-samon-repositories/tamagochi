@@ -1,0 +1,9 @@
+{
+  "fake": true,
+  "models": {
+    "study": "fake/mentirijillas",
+    "review": "fake/mentirijillas",
+    "gate": "fake/mentirijillas",
+    "chat": "fake/mentirijillas"
+  }
+}

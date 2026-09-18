@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "bad_request",
+    "message": "Hace falta una pregunta en 'q'."
+  }
+}
