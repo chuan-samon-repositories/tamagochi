@@ -19,6 +19,25 @@ single most important thing to hold in your head:
 sequential LLM calls in a background thread, and the entire brain is one SQLite
 file on disk. See `docs/architecture.md` before proposing to move it.
 
+## How we work here
+
+**Commit straight to `main`. No feature branches, no pull requests** — unless
+someone explicitly asks for one. Two people work on this repo and only one of
+them reads diffs for a living; at this size a PR queue costs more than it
+protects. If a session hands you a pre-assigned working branch, treat it as a
+staging area, not the destination: merge it into `main` and push `main` before
+you finish.
+
+The corollary is that `main` has to stay working. Run the checks under
+**Commands** *before* pushing, not after — there is no review step to catch it.
+
+**Two people, two registers.** Carlos is a software engineer: go as deep as the
+problem needs, and say it straight. Arnau is not, and most of what he asks is
+about the creature, not the code — answer him in plain language, lead with what
+changed and what it means for the bicho, and leave paths, tracebacks and
+architecture out unless he asks for them. When you can't tell who you're talking
+to, default to plain language and *offer* the detail instead of dumping it.
+
 ## Commands
 
 ```bash
