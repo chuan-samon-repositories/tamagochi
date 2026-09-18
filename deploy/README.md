@@ -97,7 +97,9 @@ Dos maneras. La segunda es mejor.
 hay que añadir ahí el dominio de Vercel.
 
 **b) Rewrite en Vercel — recomendada.** El navegador ve un solo origen y el
-problema de CORS desaparece en vez de gestionarse:
+problema de CORS desaparece en vez de gestionarse. Y es la única que funciona
+desde un *preview*: su dominio lleva el nombre de la rama, así que nunca va a
+estar en `BICHO_CORS_ORIGINS`.
 
 ```json
 {
@@ -107,9 +109,37 @@ problema de CORS desaparece en vez de gestionarse:
 }
 ```
 
-en `apps/web/vercel.json`. La web llama a `/api/ask` y no necesita saber dónde
-vive el cerebro. Mantén aun así las cabeceras CORS para el desarrollo local, que
-sí cruza orígenes (`:5173` → `:8777`).
+en `apps/web/vercel.json` — hay una plantilla en `apps/web/vercel.json.example`.
+La web llama a `/api/ask` y no necesita saber dónde vive el cerebro. Mantén aun
+así las cabeceras CORS para el desarrollo local, que sí cruza orígenes
+(`:5173` → `:8777`).
+
+Y en *Settings → Environment Variables* de Vercel:
+
+| Entorno | `VITE_BICHO_API` | Por qué |
+|---|---|---|
+| Preview | `mock` | Lo que mira Arnau en cada commit. Cerebro de mentira, en el navegador: no toca esta máquina y no gasta nada. |
+| Production | `live` | El bicho de verdad, por el rewrite de arriba. |
+
+`mock` es además el valor por defecto si la variable no está, para que un
+despliegue mal configurado no cueste dinero. Desde cualquier despliegue,
+`?api=live` y `?api=mock` mandan sobre la variable y se recuerdan: así se mira
+una pantalla contra el cerebro de verdad sin tocar la configuración.
+
+## 4 bis. Un bicho de pruebas en el túnel (opcional)
+
+Si el Mac Mini va a estar arriba de todas formas, un segundo servicio con
+`bicho --fake` en otro puerto da un servidor de verdad —HTTP, CORS, códigos de
+estado, progreso real— que no gasta un token:
+
+```bash
+BICHO_PORT=8778 BICHO_DB=~/.bicho/pruebas.db ~/tamagochi/apps/bicho/.venv/bin/bicho --fake
+```
+
+Otro `ingress` en `~/.cloudflared/config.yml` hacia `bicho-test.TU_DOMINIO.com`,
+y `VITE_BICHO_API_URL` apuntando ahí en los previews que quieran ejercitar la
+red de verdad. **Es un extra, no un requisito**: el mock del navegador no
+depende de que esta máquina esté encendida, y esa es justo su gracia.
 
 ## 5. Copias
 

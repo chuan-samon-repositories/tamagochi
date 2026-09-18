@@ -106,8 +106,9 @@ gate more permissive break the product, not just a test.
 ## Where the seams are
 
 - **`llm.py` is the only file that talks to a provider.** Backend is chosen by
-  model-name prefix: `ollama/...` → local Ollama, anything else → Anthropic.
-  Adding a provider means adding a prefix here and nowhere else.
+  model-name prefix: `ollama/...` → local Ollama, `fake/...` → `fake.py`,
+  anything else → Anthropic. Adding a provider means adding a prefix here and
+  nowhere else.
 - **`prompts.py` holds everything the model reads.** Personality and gate
   strictness are tuned here, not in logic.
 - **`config.py` reads env at import time.** Tests rebind `config.DB_PATH` etc.
@@ -135,7 +136,8 @@ it**: everything is under `/v1`, keys are English (`state`, `read`, `concepts`),
 response, change the contract in the same commit — having both halves in one
 repo exists precisely so that is one PR and not two.
 
-`apps/web` does not call any of it yet; it has no data layer at all.
+`apps/web` talks to it through `src/api/`, which picks one of two adapters and
+is the only place that knows a server exists.
 
 ## What is still open
 
@@ -150,9 +152,33 @@ working list. The two that constrain design decisions:
   whole document. Chunks are independent, so this is also where parallelism
   would go.
 
-`apps/web` has **no data layer at all** — no `fetch`, no base URL, no mock data;
-every stat is a module constant. Wiring it up means building that layer plus two
-UI surfaces that don't exist (study intake, and somewhere to render an answer).
+`apps/web` has a data layer now (`src/api/`, `src/useBicho.js`), a study intake
+and somewhere to read an answer. The sidebar stats above it are still module
+constants.
+
+## The test environment: free by construction
+
+Two tiers, and **neither of them is a mode**:
+
+- **`bicho --fake`** points the four `BICHO_MODEL_*` at `fake/...`, which routes
+  to `fake.py` — a provider like any other. The whole brain runs: server,
+  study, gate, chat, SQLite, real status codes. Zero tokens. `GET /v1/health`
+  says which brain you reached.
+- **`apps/web`'s `mock` adapter** replays fixtures in the browser, with no
+  server at all. It is the default, so a misconfigured deploy costs nothing, and
+  it works from a Vercel preview with the Mac Mini switched off — which is the
+  entire point, since a preview's per-branch hostname can never be in
+  `BICHO_CORS_ORIGINS`.
+
+The switch is **which adapter the web talks to**, chosen in `src/api/index.js`
+(`?api=live|mock` → `localStorage` → `VITE_BICHO_API` → `mock`). It is never a
+flag the server reads: if the client could tell the server "this one is free",
+that is the spend bug a stranger eventually finds.
+
+The mock's fixtures are **recorded, not written**: `scripts/record-fixtures.py`
+runs a real `--fake` brain and saves its responses, and CI re-records and
+diffs. That is what keeps the two halves from drifting, and it is why
+`BICHO_FAKE_DELAY_MS` is 0 there and 120 everywhere else.
 
 ## Things that are load-bearing and easy to break
 
@@ -163,5 +189,8 @@ UI surfaces that don't exist (study intake, and somewhere to render an answer).
   discard an entire paid study run.
 - `trocear()` guarantees no chunk exceeds `CHUNK_CHARS`. The whole
   no-context-ceiling claim rests on it.
+- `scripts/record-fixtures.py` must stay deterministic — `added_at` is
+  normalised for exactly this reason. A fixture that changes every run turns the
+  CI diff into noise everyone learns to ignore.
 - Cacheable content goes first in a `system` list, volatile content last, with
   `cache_control` on the last stable block. Caching is prefix-based.

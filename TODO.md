@@ -12,12 +12,6 @@ o `todo` cuando toca las dos mitades.
       `POST /v1/study` son hasta 100 llamadas de pago y hoy no pide nada a
       nadie. El límite de gasto en la consola de Anthropic va primero porque no
       depende de acertar con lo demás. Ver `deploy/README.md`.
-- [ ] **(web) Capa de datos.** No existe: ni `fetch`, ni URL base, ni datos
-      falsos. Contra `contract/openapi.yaml`.
-- [ ] **(web) Pantalla para dar de comer.** No hay ningún input de fichero ni de
-      texto para `/v1/study`.
-- [ ] **(web) Sitio donde se lea la respuesta.** La única salida hoy es una
-      burbuja de 32 px con un `"?"`; no cabe una frase.
 - [ ] **(web) Sacar `localStorage` del inicializador de `useState`**
       (`src/App.jsx:706-712`) y hacer reactivo `intelligenceAverage`
       (`src/App.jsx:452`), que está congelado desde que se importa el módulo.
@@ -60,8 +54,14 @@ Detalle y reproducción en [`docs/known-issues.md`](docs/known-issues.md).
       abrir las estadísticas sigue siendo un botón que no para de moverse),
       `inert` en los paneles colapsados, `lang="es"`, y anillos de
       `:focus-visible`.
-- [ ] **(web) Partir `App.jsx`** por las costuras antes de meterle la capa de
-      datos, no después.
+- [ ] **(web) Acabar de partir `App.jsx`.** La capa de datos y las dos pantallas
+      nuevas salieron a `src/api/`, `src/useBicho.js` y `src/components/`, pero
+      las ~600 líneas de animación siguen en un fichero.
+- [ ] **(web) El mock reimplementa el gate en 30 líneas de JS.** Las fixtures
+      fijan la forma de las respuestas y CI lo comprueba; el comportamiento
+      alrededor es una aproximación de `fake.py` que puede separarse sin que
+      nadie se entere. Si empieza a importar, se graba también una tabla de
+      preguntas y respuestas.
 
 ## Algún día
 
