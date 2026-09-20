@@ -1,10 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { blobatar } from 'blobatar'
-import { unsure } from 'blobatar/expression'
+import { Blobatar } from '@blobatar/react'
+import { useGaze } from '@blobatar/react/gaze'
+import 'blobatar/motion.css'
+import 'blobatar/gaze.css'
 import { AnswerPanel } from './components/AnswerPanel'
 import { FeedModal } from './components/FeedModal'
 import { SourceBadge } from './components/SourceBadge'
+import { DebugPanel } from './components/DebugPanel'
 import { useBicho } from './useBicho'
+import { useCreature } from './creature/useCreature'
 import terrainBg from './assets/terrain-bg.webp'
 import nestImage from './assets/nest.webp'
 import eggOnlyImage from './assets/egg-only.webp'
@@ -78,6 +83,14 @@ const HOP_DURATION_MAX = 620
 const IDLE_MIN = 120
 const IDLE_MAX = 420
 const MAX_TILT = 16
+
+// Perfiles del salto para cada estado que se mueve por la pantalla (aparte
+// del botar en cadena, que reutiliza las constantes de arriba tal cual).
+const HOP_PROFILES = {
+  deslizarse: { distMin: 140, distMax: 260, height: 4, msPerPx: 2.2, durationMin: 900, durationMax: 3600 },
+  saltoAlto: { distMin: 10, distMax: 60, height: 36, msPerPx: 7, durationMin: 500, durationMax: 900 },
+  voltereta: { distMin: 50, distMax: 120, height: 17, msPerPx: 5.5, durationMin: 500, durationMax: 900 },
+}
 const DRAG_LIFT = 20
 const DRAG_MOVE_THRESHOLD = 6
 const DIZZY_SPIN_THRESHOLD = Math.PI * 5
@@ -129,7 +142,7 @@ function pushOutOfRect(x, y, rect) {
   return { x, y: bottom }
 }
 
-function pickHopTarget(x, y) {
+function pickHopTarget(x, y, distMin = HOP_MIN_DIST, distMax = HOP_MAX_DIST) {
   const maxX = window.innerWidth - BALL_SIZE - EDGE_MARGIN
   const maxY = window.innerHeight - BALL_SIZE - EDGE_MARGIN
   const sidebarRect = document.querySelector('.sidebar')?.getBoundingClientRect()
@@ -139,7 +152,7 @@ function pickHopTarget(x, y) {
 
   for (let attempt = 0; attempt < 8; attempt++) {
     const angle = Math.random() * Math.PI * 2
-    const dist = HOP_MIN_DIST + Math.random() * (HOP_MAX_DIST - HOP_MIN_DIST)
+    const dist = distMin + Math.random() * (distMax - distMin)
     let tx = clamp(x + Math.cos(angle) * dist, EDGE_MARGIN, maxX)
     let ty = clamp(y + Math.sin(angle) * dist, EDGE_MARGIN, maxY)
 
@@ -157,21 +170,38 @@ function pickHopTarget(x, y) {
   return { x, y }
 }
 
-function BouncingBall({ onClick, confused, seed }) {
+const REACTION_BUBBLE = {
+  preguntando: '?',
+  risa: '¡ja ja!',
+  enfado: '¬¬',
+  acariciado: '♥',
+  hipo: 'hic',
+  estornudo: '¡achís!',
+  poseGraciosa: '★',
+  mosca: '?',
+  eructo: 'urp',
+  hambre: 'growl~',
+}
+
+function BouncingBall({ onClick, creature, seed }) {
   const wrapRef = useRef(null)
   const tiltRef = useRef(null)
   const ballRef = useRef(null)
   const bubbleRef = useRef(null)
   const shadowRef = useRef(null)
   const dustRef = useRef(null)
-  const pausedRef = useRef(confused)
   const dragMovedRef = useRef(false)
+  const creatureRef = useRef(creature)
+  useEffect(() => {
+    creatureRef.current = creature
+  })
   const [dizzy, setDizzy] = useState(false)
   const dizzyTimeoutRef = useRef(null)
 
+  const { ref: gazeRef, lookAt } = useGaze({ travel: 2.2 })
   useEffect(() => {
-    pausedRef.current = confused || dizzy
-  }, [confused, dizzy])
+    lookAt('pointer')
+  }, [lookAt])
 
   useEffect(() => () => clearTimeout(dizzyTimeoutRef.current), [])
 
@@ -186,14 +216,18 @@ function BouncingBall({ onClick, confused, seed }) {
 
     let x = window.innerWidth / 2 - BALL_SIZE / 2
     let y = window.innerHeight / 2 - BALL_SIZE / 2
-    let phase = 'idle'
-    let phaseStart = performance.now()
-    let idleDuration = 300
+    let mode = 'chain' // 'chain' (botar en cadena) | 'hop' (un solo salto) | 'stationary' | 'drag'
+    let hopKind = null
+    let chainSubPhase = 'pause'
+    let chainPauseUntil = performance.now() + 300
     let hopFrom = { x, y }
     let hopTo = { x, y }
+    let hopStartAt = 0
     let hopDuration = 0
     let hopHeight = HOP_HEIGHT
     let tiltDeg = 0
+    let landUntil = 0
+    let lastEntryId = creatureRef.current.stateEntryId
     let raf
 
     const spawnDust = (cx, cy) => {
@@ -205,55 +239,116 @@ function BouncingBall({ onClick, confused, seed }) {
       dust.classList.add('dust-burst--play')
     }
 
+    const enterMotion = (stateId, now) => {
+      const profile = HOP_PROFILES[stateId]
+      if (stateId === 'idle') {
+        mode = 'chain'
+        hopKind = null
+        chainSubPhase = 'pause'
+        chainPauseUntil = now + IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN)
+      } else if (profile) {
+        mode = 'hop'
+        hopKind = stateId
+        hopFrom = { x, y }
+        hopTo = pickHopTarget(x, y, profile.distMin, profile.distMax)
+        const dist = Math.hypot(hopTo.x - hopFrom.x, hopTo.y - hopFrom.y)
+        hopDuration = clamp(dist * profile.msPerPx, profile.durationMin, profile.durationMax)
+        hopHeight = profile.height * (0.85 + Math.random() * 0.3)
+        tiltDeg = clamp(((hopTo.x - hopFrom.x) / (dist || 1)) * MAX_TILT, -MAX_TILT, MAX_TILT)
+        hopStartAt = now
+        if (ball) ball.style.setProperty('--flip-duration', `${hopDuration}ms`)
+      } else {
+        mode = 'stationary'
+        hopKind = null
+        tiltDeg = 0
+      }
+    }
+
+    const hopPoseClass = (t) => {
+      if (t < 0.12) return 'ball--crouch'
+      if (t < 0.85) return 'ball--stretch'
+      return null
+    }
+
+    const classNameFor = (cr, now) => {
+      const classes = ['ball']
+      if (mode === 'chain' && chainSubPhase === 'hop') {
+        const t = clamp((now - hopStartAt) / hopDuration, 0, 1)
+        const pose = hopPoseClass(t)
+        if (pose) classes.push(pose)
+      } else if (mode === 'hop') {
+        const t = clamp((now - hopStartAt) / hopDuration, 0, 1)
+        const pose = hopPoseClass(t)
+        if (pose) classes.push(pose)
+        if (hopKind === 'voltereta') classes.push('ball--voltereta-spin')
+      } else if (mode === 'stationary') {
+        classes.push(`ball--${cr.state}`)
+      }
+      if (now < landUntil) classes.push('ball--land')
+      if (cr.reaction) classes.push(`ball--reaction-${cr.reaction}`)
+      if (cr.petted) classes.push('ball--petted')
+      return classes.join(' ')
+    }
+
     const tick = (now) => {
-      const elapsed = now - phaseStart
+      const cr = creatureRef.current
+      if (cr.stateEntryId !== lastEntryId && mode !== 'drag') {
+        lastEntryId = cr.stateEntryId
+        enterMotion(cr.state, now)
+      }
 
       let bob = 0
       let arcHeight = 0
 
-      if (phase === 'drag') {
+      if (mode === 'drag') {
         arcHeight = DRAG_LIFT
-        ball.className = 'ball'
-      } else if (phase === 'idle') {
-        bob = Math.sin(elapsed / 190) * 1.5
-        if (elapsed >= idleDuration && !pausedRef.current) {
-          hopFrom = { x, y }
-          hopTo = pickHopTarget(x, y)
-          const dist = Math.hypot(hopTo.x - hopFrom.x, hopTo.y - hopFrom.y)
-          hopDuration = clamp(dist * HOP_MS_PER_PX, HOP_DURATION_MIN, HOP_DURATION_MAX)
-          hopHeight = HOP_HEIGHT * (0.8 + Math.random() * 0.4)
-          tiltDeg = clamp(((hopTo.x - hopFrom.x) / dist || 0) * MAX_TILT, -MAX_TILT, MAX_TILT)
-          phase = 'hop'
-          phaseStart = now
+      } else if (mode === 'chain') {
+        if (chainSubPhase === 'pause') {
+          bob = Math.sin(now / 190) * 1.5
+          if (now >= chainPauseUntil) {
+            hopFrom = { x, y }
+            hopTo = pickHopTarget(x, y)
+            const dist = Math.hypot(hopTo.x - hopFrom.x, hopTo.y - hopFrom.y)
+            hopDuration = clamp(dist * HOP_MS_PER_PX, HOP_DURATION_MIN, HOP_DURATION_MAX)
+            hopHeight = HOP_HEIGHT * (0.8 + Math.random() * 0.4)
+            tiltDeg = clamp(((hopTo.x - hopFrom.x) / (dist || 1)) * MAX_TILT, -MAX_TILT, MAX_TILT)
+            chainSubPhase = 'hop'
+            hopStartAt = now
+          }
+        } else {
+          const t = clamp((now - hopStartAt) / hopDuration, 0, 1)
+          const horizT = easeInOutSine(t)
+          arcHeight = Math.sin(t * Math.PI) * hopHeight
+          x = hopFrom.x + (hopTo.x - hopFrom.x) * horizT
+          y = hopFrom.y + (hopTo.y - hopFrom.y) * horizT - arcHeight
+          if (t >= 1) {
+            x = hopTo.x
+            y = hopTo.y
+            chainSubPhase = 'pause'
+            chainPauseUntil = now + IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN)
+            tiltDeg = 0
+            landUntil = now + 140
+            spawnDust(x + BALL_SIZE / 2, y + BALL_SIZE * 0.92)
+          }
         }
-      } else {
-        const t = clamp(elapsed / hopDuration, 0, 1)
+      } else if (mode === 'hop') {
+        const t = clamp((now - hopStartAt) / hopDuration, 0, 1)
         const horizT = easeInOutSine(t)
         arcHeight = Math.sin(t * Math.PI) * hopHeight
         x = hopFrom.x + (hopTo.x - hopFrom.x) * horizT
         y = hopFrom.y + (hopTo.y - hopFrom.y) * horizT - arcHeight
-
-        if (t < 0.12) {
-          ball.className = 'ball ball--crouch'
-        } else if (t < 0.85) {
-          ball.className = 'ball ball--stretch'
-        } else {
-          ball.className = 'ball'
-        }
-
         if (t >= 1) {
           x = hopTo.x
           y = hopTo.y
-          phase = 'idle'
-          phaseStart = now
-          idleDuration = IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN)
+          mode = 'stationary'
+          hopKind = null
           tiltDeg = 0
-          ball.className = 'ball ball--land'
+          landUntil = now + 140
           spawnDust(x + BALL_SIZE / 2, y + BALL_SIZE * 0.92)
-          setTimeout(() => {
-            if (ball) ball.className = 'ball'
-          }, 140)
         }
+      } else {
+        // stationary: apenas un balanceo mínimo, la respiración la pone blobatar
+        bob = Math.sin(now / 900) * 0.6
       }
 
       wrap.style.transform = `translate(${x}px, ${y + bob}px)`
@@ -263,15 +358,19 @@ function BouncingBall({ onClick, confused, seed }) {
       }
       if (shadow) {
         const groundY = y + arcHeight
-        const shrink = clamp(1 - arcHeight / (hopHeight * 3.2), 0.82, 1)
+        const shrink = clamp(1 - arcHeight / (hopHeight * 3.2 || 1), 0.82, 1)
+        const dormido = cr.state === 'dormir' && mode === 'stationary'
         const shadowCx = x + BALL_SIZE / 2
-        // Follows most of the way up with the creature instead of staying
-        // pinned to the ground, so it never visibly detaches mid-hop.
+        // Sigue casi todo el camino hacia arriba con el bicho en vez de
+        // quedarse clavada en el suelo, para que nunca se despegue a la vista
+        // a media parábola.
         const shadowCy = groundY + BALL_SIZE * 0.92 - arcHeight * 0.55
         shadow.style.transform =
-          `translate(${shadowCx}px, ${shadowCy}px) translate(-50%, -50%) scale(${shrink})`
+          `translate(${shadowCx}px, ${shadowCy}px) translate(-50%, -50%) scale(${dormido ? shrink * 1.3 : shrink})`
         shadow.style.opacity = 0.55 * shrink
       }
+
+      ball.className = classNameFor(cr, now)
 
       raf = requestAnimationFrame(tick)
     }
@@ -304,8 +403,9 @@ function BouncingBall({ onClick, confused, seed }) {
       dragSpinAccum = 0
       dragHasLastVec = false
       dragMovedRef.current = false
-      phase = 'drag'
+      mode = 'drag'
       wrap.setPointerCapture(e.pointerId)
+      creatureRef.current.startPet()
     }
 
     const handlePointerMove = (e) => {
@@ -318,6 +418,7 @@ function BouncingBall({ onClick, confused, seed }) {
       x = groundX
       y = groundY - DRAG_LIFT
       if (Math.hypot(e.clientX - dragStartClientX, e.clientY - dragStartClientY) > DRAG_MOVE_THRESHOLD) {
+        if (!dragMovedRef.current) creatureRef.current.cancelPet()
         dragMovedRef.current = true
       }
 
@@ -347,15 +448,14 @@ function BouncingBall({ onClick, confused, seed }) {
         wrap.releasePointerCapture(e.pointerId)
       }
       y += DRAG_LIFT
-      phase = 'idle'
-      phaseStart = performance.now()
-      idleDuration = IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN)
       tiltDeg = 0
-      ball.className = 'ball ball--land'
+      landUntil = performance.now() + 140
       spawnDust(x + BALL_SIZE / 2, y + BALL_SIZE * 0.92)
-      setTimeout(() => {
-        if (ball) ball.className = 'ball'
-      }, 140)
+      enterMotion(creatureRef.current.state, performance.now())
+      lastEntryId = creatureRef.current.stateEntryId
+
+      creatureRef.current.endPet()
+      if (!dragMovedRef.current) creatureRef.current.registerTap()
 
       const dragElapsed = Math.max(performance.now() - dragStartTime, 1)
       const avgSpeed = dragPathLen / dragElapsed
@@ -380,6 +480,9 @@ function BouncingBall({ onClick, confused, seed }) {
     }
   }, [])
 
+  const hideEyes = dizzy || creature.dizzyEyes
+  const bubbleText = REACTION_BUBBLE[creature.reaction] ?? (creature.state === 'dormir' ? 'z z Z' : null)
+
   return (
     <>
       <div ref={shadowRef} className="ball-shadow" aria-hidden="true" />
@@ -399,7 +502,7 @@ function BouncingBall({ onClick, confused, seed }) {
         ))}
       </div>
       <div ref={bubbleRef} className="ball-bubble-wrap" aria-hidden="true">
-        <div className={`ball-bubble ${confused ? 'ball-bubble--visible' : ''}`}>?</div>
+        <div className={`ball-bubble ${bubbleText ? 'ball-bubble--visible' : ''}`}>{bubbleText}</div>
       </div>
       <button
         ref={wrapRef}
@@ -416,12 +519,27 @@ function BouncingBall({ onClick, confused, seed }) {
       >
         <div ref={tiltRef} className="ball-tilt">
           <div ref={ballRef} className="ball">
-            <BlobFigure
-              seed={seed}
-              expression={confused ? unsure : undefined}
-              className={`blob-figure ${dizzy ? 'blob-figure--hide-eyes' : ''}`}
+            <Blobatar
+              ref={gazeRef}
+              name={seed}
+              animate="always"
+              background={false}
+              expression={creature.expression}
+              className={`blob-figure ${hideEyes ? 'blob-figure--hide-eyes' : ''}`}
             />
-            {dizzy && <DizzyEyes />}
+            {hideEyes && <DizzyEyes />}
+            {creature.reaction === 'mosca' && (
+              <span className="fly-sprite" aria-hidden="true">
+                🪰
+              </span>
+            )}
+            {creature.reaction === 'acariciado' && (
+              <span className="pet-hearts" aria-hidden="true">
+                <span>♥</span>
+                <span>♥</span>
+                <span>♥</span>
+              </span>
+            )}
           </div>
         </div>
       </button>
@@ -764,6 +882,12 @@ function App() {
   const reactTimeoutRef = useRef(null)
   const bicho = useBicho()
 
+  const creature = useCreature({
+    energyPct: stats[0].value / 100,
+    sanityPct: stats[1].value / 100,
+    hungerPct: orbStats[1].value / 100,
+  })
+
   const handleSubmit = (e) => {
     e.preventDefault()
     const question = message.trim()
@@ -777,6 +901,39 @@ function App() {
   }
 
   useEffect(() => () => clearTimeout(reactTimeoutRef.current), [])
+
+  useEffect(() => {
+    creature.setAsking(reacting)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reacting])
+
+  const lastProgressStateRef = useRef(null)
+  useEffect(() => {
+    const state = bicho.progress?.state
+    if (state === 'done' && lastProgressStateRef.current !== 'done') {
+      creature.triggerBurp()
+    }
+    lastProgressStateRef.current = state
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bicho.progress?.state])
+
+  // Saludo o enfurruñamiento al volver, según cuánto haga que no se abría.
+  useEffect(() => {
+    const lastSeen = Number(localStorage.getItem('tamagochi:lastSeen') || 0)
+    const now = Date.now()
+    if (lastSeen) {
+      const awayMs = now - lastSeen
+      if (awayMs > 60 * 60 * 1000) {
+        creature.debug.forceState('vibrar')
+        setTimeout(() => creature.debug.forceState(null), 2000)
+      } else if (awayMs > 30 * 60 * 1000 && Math.random() < 0.5) {
+        creature.debug.forceState('aburrido')
+        setTimeout(() => creature.debug.forceState(null), 2000)
+      }
+    }
+    localStorage.setItem('tamagochi:lastSeen', String(now))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!expanded) return
@@ -838,10 +995,12 @@ function App() {
       {hasCreature && (
         <BouncingBall
           onClick={() => setExpanded(true)}
-          confused={reacting}
+          creature={creature}
           seed={creatureSeed}
         />
       )}
+
+      {hasCreature && <DebugPanel debug={creature.debug} />}
 
       {hasCreature && feeding && (
         <FeedModal
