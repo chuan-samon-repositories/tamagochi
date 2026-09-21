@@ -58,11 +58,6 @@ export function computeWeights(ctx) {
     weights.saltoAlto = 0
     weights.voltereta = 0
   }
-  const inHideCooldown =
-    ctx.lastHideAt != null && ctx.now - ctx.lastHideAt < CFG.cooldowns.hideMinMs
-  if (inHideCooldown) {
-    weights.esconderse = 0
-  }
 
   return weights
 }

@@ -4,7 +4,7 @@
 // poder tocar números sin tocar lógica.
 
 export const CREATURE_CONFIG = {
-  // --- Los nueve estados, con su peso base y su duración base en ms -------
+  // --- Los ocho estados, con su peso base y su duración base en ms --------
   // El peso decide qué tan probable es que salga elegido; la duración es el
   // punto medio del rango pedido y luego se le aplica ±30% de ruido al
   // vuelo (ver engine.js), salvo "dormir", que ya es un rango ancho a
@@ -18,7 +18,6 @@ export const CREATURE_CONFIG = {
     aburrido: { weight: 4, minMs: 3000, maxMs: 3000 },
     vibrar: { weight: 3, minMs: 2000, maxMs: 2000 },
     dormir: { weight: 3, minMs: 30000, maxMs: 120000 },
-    esconderse: { weight: 2, minMs: 2000, maxMs: 3000 },
   },
 
   // Estados que mueven al bicho por la pantalla (motor de saltos ya
@@ -63,7 +62,6 @@ export const CREATURE_CONFIG = {
     noInteractionMs: 5 * 60 * 1000,
     noInteraction: {
       aburrido: 3,
-      esconderse: 3,
     },
     highHungerThreshold: 0.7,
     // Cada 30-60s, mientras el hambre esté alta, la ociosidad se sustituye
@@ -91,7 +89,6 @@ export const CREATURE_CONFIG = {
     // Salto alto y voltereta comparten cooldown: uno bloquea al otro.
     acrobaticsMinMs: 15000,
     acrobaticsMaxMs: 20000,
-    hideMinMs: 2 * 60 * 1000,
   },
 
   // --- Interacción -----------------------------------------------------------

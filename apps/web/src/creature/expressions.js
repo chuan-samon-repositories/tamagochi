@@ -27,7 +27,6 @@ export const STATE_EXPRESSION = {
   aburrido: sleepy,
   vibrar: happy,
   dormir: sleepy,
-  esconderse: idle,
   estirarse: sleepy,
   hambre: sad,
 }

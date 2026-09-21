@@ -11,7 +11,6 @@ const LABELS = {
   aburrido: 'Aburrido',
   vibrar: 'Vibrar',
   dormir: 'Dormir',
-  esconderse: 'Esconderse',
 }
 
 export function DebugPanel({ debug }) {

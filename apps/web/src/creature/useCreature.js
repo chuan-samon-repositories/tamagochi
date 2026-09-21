@@ -38,7 +38,6 @@ export function useCreature({ energyPct = 1, sanityPct = 1, hungerPct = 0 } = {}
   const lastInteractionRef = useRef(Date.now())
   const lastAcrobaticAtRef = useRef(null)
   const acrobaticsCooldownMsRef = useRef(pickAcrobaticsCooldownMs())
-  const lastHideAtRef = useRef(null)
   const pettedUntilRef = useRef(0)
   const pendingQueueRef = useRef([])
   const timerRef = useRef(null)
@@ -59,7 +58,6 @@ export function useCreature({ energyPct = 1, sanityPct = 1, hungerPct = 0 } = {}
       lastState: stateIdRef.current,
       lastAcrobaticAt: lastAcrobaticAtRef.current,
       acrobaticsCooldownMs: acrobaticsCooldownMsRef.current,
-      lastHideAt: lastHideAtRef.current,
     }
   }, [])
 
@@ -94,10 +92,6 @@ export function useCreature({ energyPct = 1, sanityPct = 1, hungerPct = 0 } = {}
         lastAcrobaticAtRef.current = Date.now()
         acrobaticsCooldownMsRef.current = pickAcrobaticsCooldownMs()
       }
-      if (nextId === 'esconderse') {
-        lastHideAtRef.current = Date.now()
-      }
-
       const duration = debugForcedRef.current === nextId ? FORCED_DURATION_MS : pickDuration(nextId)
 
       setStateId(nextId)
