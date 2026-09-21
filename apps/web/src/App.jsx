@@ -199,8 +199,10 @@ function BouncingBall({ onClick, creature, seed }) {
 
   const { ref: gazeRef, lookAt } = useGaze({ travel: 2.2 })
   useEffect(() => {
-    lookAt('pointer')
-  }, [lookAt])
+    // Dormido no sigue el cursor: los ojos se quedan quietos hasta que se
+    // despierta.
+    lookAt(creature.state === 'dormir' ? 'rest' : 'pointer')
+  }, [lookAt, creature.state])
 
   useEffect(() => () => clearTimeout(dizzyTimeoutRef.current), [])
 
