@@ -23,7 +23,7 @@ export const STATE_EXPRESSION = {
   quieto: idle,
   deslizarse: idle,
   saltoAlto: surprised,
-  voltereta: undefined, // ojos en espiral, ver DizzyEyes
+  voltereta: surprised,
   bostezo: sleepy,
   aburrido: sleepy,
   vibrar: happy,
@@ -34,7 +34,8 @@ export const STATE_EXPRESSION = {
 }
 
 // Estados con ojos en espiral en vez de la cara normal (mareo por giro).
-export const DIZZY_STATES = new Set(['voltereta'])
+// Ninguno de los estados normales lo usa; solo el mareo por arrastre rápido.
+export const DIZZY_STATES = new Set([])
 
 // Reacciones a interacción y eventos raros, por encima de lo que sea que
 // esté haciendo el estado de fondo.
