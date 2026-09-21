@@ -74,14 +74,14 @@ function DizzyEyes() {
 const BALL_SIZE = 128
 const EDGE_MARGIN = 16
 const OBSTACLE_PADDING = 16
-const HOP_MIN_DIST = 100
-const HOP_MAX_DIST = 230
-const HOP_HEIGHT = 13
-const HOP_MS_PER_PX = 3.2
-const HOP_DURATION_MIN = 320
-const HOP_DURATION_MAX = 620
-const IDLE_MIN = 120
-const IDLE_MAX = 420
+const HOP_MIN_DIST = 60
+const HOP_MAX_DIST = 140
+const HOP_HEIGHT = 11
+const HOP_MS_PER_PX = 4.6
+const HOP_DURATION_MIN = 480
+const HOP_DURATION_MAX = 820
+const IDLE_MIN = 500
+const IDLE_MAX = 1100
 const MAX_TILT = 16
 
 // Perfiles del salto para cada estado que se mueve por la pantalla (aparte
