@@ -461,8 +461,12 @@ function BouncingBall({ onClick, creature, seed }) {
       const avgSpeed = dragPathLen / dragElapsed
       if (dragSpinAccum > DIZZY_SPIN_THRESHOLD && avgSpeed > DIZZY_SPEED_THRESHOLD) {
         setDizzy(true)
+        creatureRef.current.debug.forceState('quieto')
         clearTimeout(dizzyTimeoutRef.current)
-        dizzyTimeoutRef.current = setTimeout(() => setDizzy(false), DIZZY_DURATION)
+        dizzyTimeoutRef.current = setTimeout(() => {
+          setDizzy(false)
+          creatureRef.current.debug.forceState(null)
+        }, DIZZY_DURATION)
       }
     }
 
