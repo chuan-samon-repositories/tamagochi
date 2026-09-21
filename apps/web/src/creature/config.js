@@ -4,7 +4,7 @@
 // poder tocar números sin tocar lógica.
 
 export const CREATURE_CONFIG = {
-  // --- Los doce estados, con su peso base y su duración base en ms --------
+  // --- Los diez estados, con su peso base y su duración base en ms --------
   // El peso decide qué tan probable es que salga elegido; la duración es el
   // punto medio del rango pedido y luego se le aplica ±30% de ruido al
   // vuelo (ver engine.js), salvo "dormir", que ya es un rango ancho a
@@ -16,9 +16,7 @@ export const CREATURE_CONFIG = {
     saltoAlto: { weight: 8, minMs: 1000, maxMs: 1000 },
     voltereta: { weight: 6, minMs: 1000, maxMs: 1000 },
     bostezo: { weight: 5, minMs: 1500, maxMs: 1500 },
-    rodar: { weight: 1, minMs: 2000, maxMs: 2000 },
     aburrido: { weight: 4, minMs: 3000, maxMs: 3000 },
-    trompo: { weight: 1, minMs: 1000, maxMs: 1000 },
     vibrar: { weight: 3, minMs: 2000, maxMs: 2000 },
     dormir: { weight: 3, minMs: 30000, maxMs: 120000 },
     esconderse: { weight: 2, minMs: 2000, maxMs: 3000 },
@@ -48,8 +46,6 @@ export const CREATURE_CONFIG = {
       bostezo: 4,
       saltoAlto: 0.4,
       voltereta: 0.4,
-      rodar: 0.4,
-      trompo: 0.4,
     },
     nightHourStart: 23,
     nightHourEnd: 7, // [23:00, 7:00)
@@ -59,8 +55,6 @@ export const CREATURE_CONFIG = {
       deslizarse: 0.5,
       saltoAlto: 0.5,
       voltereta: 0.5,
-      rodar: 0.5,
-      trompo: 0.5,
       vibrar: 0.5,
     },
     morningHourStart: 7,
@@ -91,8 +85,6 @@ export const CREATURE_CONFIG = {
       deslizarse: 0.3,
       saltoAlto: 0.3,
       voltereta: 0.3,
-      rodar: 0.3,
-      trompo: 0.3,
       vibrar: 0.3,
     },
   },
