@@ -4,7 +4,7 @@
 // poder tocar números sin tocar lógica.
 
 export const CREATURE_CONFIG = {
-  // --- Los diez estados, con su peso base y su duración base en ms --------
+  // --- Los nueve estados, con su peso base y su duración base en ms -------
   // El peso decide qué tan probable es que salga elegido; la duración es el
   // punto medio del rango pedido y luego se le aplica ±30% de ruido al
   // vuelo (ver engine.js), salvo "dormir", que ya es un rango ancho a
@@ -12,7 +12,6 @@ export const CREATURE_CONFIG = {
   states: {
     idle: { weight: 30, minMs: 3000, maxMs: 6000 },
     quieto: { weight: 20, minMs: 2000, maxMs: 5000 },
-    deslizarse: { weight: 12, minMs: 2000, maxMs: 4000 },
     saltoAlto: { weight: 8, minMs: 1000, maxMs: 1000 },
     voltereta: { weight: 6, minMs: 1000, maxMs: 1000 },
     bostezo: { weight: 5, minMs: 1500, maxMs: 1500 },
@@ -24,7 +23,7 @@ export const CREATURE_CONFIG = {
 
   // Estados que mueven al bicho por la pantalla (motor de saltos ya
   // existente); el resto se anima sobre su sitio.
-  movingStates: ['idle', 'deslizarse', 'saltoAlto', 'voltereta'],
+  movingStates: ['idle', 'saltoAlto', 'voltereta'],
 
   // Antes de dormir siempre hay bostezo, y al despertar siempre hay
   // estiramiento — se insertan a mano, no salen del sorteo.
@@ -52,7 +51,6 @@ export const CREATURE_CONFIG = {
     night: {
       dormir: 5,
       // "movimiento" = cualquier estado que no sea quedarse quieto.
-      deslizarse: 0.5,
       saltoAlto: 0.5,
       voltereta: 0.5,
       vibrar: 0.5,
@@ -82,7 +80,6 @@ export const CREATURE_CONFIG = {
     sadOrSickThreshold: 0.3, // salud mental por debajo de esto
     sadOrSick: {
       aburrido: 3,
-      deslizarse: 0.3,
       saltoAlto: 0.3,
       voltereta: 0.3,
       vibrar: 0.3,

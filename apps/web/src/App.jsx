@@ -87,7 +87,6 @@ const MAX_TILT = 16
 // Perfiles del salto para cada estado que se mueve por la pantalla (aparte
 // del botar en cadena, que reutiliza las constantes de arriba tal cual).
 const HOP_PROFILES = {
-  deslizarse: { distMin: 140, distMax: 260, height: 4, msPerPx: 2.2, durationMin: 900, durationMax: 3600 },
   saltoAlto: { distMin: 10, distMax: 60, height: 36, msPerPx: 7, durationMin: 500, durationMax: 900 },
   voltereta: { distMin: 50, distMax: 120, height: 17, msPerPx: 5.5, durationMin: 500, durationMax: 900 },
 }

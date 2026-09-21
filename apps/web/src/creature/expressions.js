@@ -21,7 +21,6 @@ import {
 export const STATE_EXPRESSION = {
   idle,
   quieto: idle,
-  deslizarse: idle,
   saltoAlto: surprised,
   voltereta: surprised,
   bostezo: sleepy,

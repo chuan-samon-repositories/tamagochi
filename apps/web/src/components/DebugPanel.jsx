@@ -5,7 +5,6 @@ import { STATE_IDS } from '../creature/config'
 const LABELS = {
   idle: 'Botar',
   quieto: 'Quieto',
-  deslizarse: 'Deslizarse',
   saltoAlto: 'Salto alto',
   voltereta: 'Voltereta',
   bostezo: 'Bostezo',
