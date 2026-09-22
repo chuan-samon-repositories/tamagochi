@@ -117,6 +117,16 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max)
 }
 
+function lerpPose(a, b, t) {
+  return {
+    sx: a.sx + (b.sx - a.sx) * t,
+    sy: a.sy + (b.sy - a.sy) * t,
+    rot: a.rot + (b.rot - a.rot) * t,
+    tx: a.tx + (b.tx - a.tx) * t,
+    ty: a.ty + (b.ty - a.ty) * t,
+  }
+}
+
 function pushOutOfRect(x, y, rect) {
   if (!rect) return { x, y }
   const left = rect.left - OBSTACLE_PADDING
@@ -257,7 +267,6 @@ function BouncingBall({ onClick, creature, seed }) {
         hopHeight = profile.height * (0.85 + Math.random() * 0.3)
         tiltDeg = clamp(((hopTo.x - hopFrom.x) / (dist || 1)) * MAX_TILT, -MAX_TILT, MAX_TILT)
         hopStartAt = now
-        if (ball) ball.style.setProperty('--flip-duration', `${hopDuration}ms`)
       } else {
         mode = 'stationary'
         hopKind = null
@@ -265,30 +274,166 @@ function BouncingBall({ onClick, creature, seed }) {
       }
     }
 
-    const hopPoseClass = (t) => {
-      if (t < 0.12) return 'ball--crouch'
-      if (t < 0.85) return 'ball--stretch'
-      return null
+    // --- La pose del cuerpo (estirado/aplastado/girado), calculada en JS en
+    // vez de con clases CSS, para poder mezclar suavemente de una pose a la
+    // siguiente en vez de que una animación corte en seco a la otra. --------
+    const IDENTITY_POSE = { sx: 1, sy: 1, rot: 0, tx: 0, ty: 0 }
+    const POSE_BLEND_MS = 220
+    let poseStartedAt = performance.now()
+    let baseKey = null
+    let lastBasePose = IDENTITY_POSE
+    let poseBlendFrom = IDENTITY_POSE
+    let poseBlendStart = 0
+    const easeOutQuad = (s) => 1 - (1 - s) * (1 - s)
+
+    const rawBasePose = (now) => {
+      const elapsed = now - poseStartedAt
+      if (mode === 'drag') return IDENTITY_POSE
+      if (mode === 'hop' || (mode === 'chain' && chainSubPhase === 'hop')) {
+        const t = clamp(elapsed / hopDuration, 0, 1)
+        let sx = 1
+        let sy = 1
+        if (t < 0.12) {
+          sx = 1.18
+          sy = 0.8
+        } else if (t < 0.85) {
+          sx = 0.86
+          sy = 1.16
+        }
+        const rot = hopKind === 'voltereta' ? t * 360 : 0
+        return { sx, sy, rot, tx: 0, ty: 0 }
+      }
+      if (mode === 'chain') return IDENTITY_POSE
+      switch (creatureRef.current.state) {
+        case 'quieto':
+          return { sx: 1, sy: 1, rot: Math.sin((elapsed / 2600) * Math.PI * 2) * 1.4, tx: 0, ty: 0 }
+        case 'bostezo':
+        case 'estirarse': {
+          const bump = Math.sin(clamp(elapsed / 1400, 0, 1) * Math.PI)
+          return { sx: 1 - 0.1 * bump, sy: 1 + 0.22 * bump, rot: 0, tx: 0, ty: 0 }
+        }
+        case 'aburrido': {
+          const eased = easeOutQuad(clamp(elapsed / 1200, 0, 1))
+          return { sx: 1 + 0.02 * eased, sy: 1 - 0.08 * eased, rot: 0, tx: 0, ty: 4 * eased }
+        }
+        case 'vibrar':
+          return {
+            sx: 1,
+            sy: 1,
+            rot: Math.sin(elapsed / 9) * 1.4,
+            tx: Math.sin(elapsed / 12) * 1.6,
+            ty: Math.cos(elapsed / 12) * 1,
+          }
+        case 'dormir': {
+          const eased = easeOutQuad(clamp(elapsed / 1200, 0, 1))
+          return { sx: 1 + 0.16 * eased, sy: 1 - 0.24 * eased, rot: 0, tx: 0, ty: 10 * eased }
+        }
+        default:
+          return IDENTITY_POSE
+      }
     }
 
-    const classNameFor = (cr, now) => {
-      const classes = ['ball']
-      if (mode === 'chain' && chainSubPhase === 'hop') {
-        const t = clamp((now - hopStartAt) / hopDuration, 0, 1)
-        const pose = hopPoseClass(t)
-        if (pose) classes.push(pose)
-      } else if (mode === 'hop') {
-        const t = clamp((now - hopStartAt) / hopDuration, 0, 1)
-        const pose = hopPoseClass(t)
-        if (pose) classes.push(pose)
-        if (hopKind === 'voltereta') classes.push('ball--voltereta-spin')
-      } else if (mode === 'stationary') {
-        classes.push(`ball--${cr.state}`)
+    const reactionDelta = (reaction, elapsed) => {
+      switch (reaction) {
+        case 'risa':
+          return { sx: 1, sy: 1, rot: Math.sin(elapsed / 19) * 3, tx: 0, ty: -Math.abs(Math.sin(elapsed / 19)) * 3 }
+        case 'enfado':
+          return { sx: 1, sy: 1, rot: 0, tx: Math.sin(elapsed / 16) * 2, ty: 0 }
+        case 'acariciado': {
+          const w = Math.sin((elapsed / 600) * Math.PI * 2)
+          return { sx: 1 + 0.03 * w, sy: 1 - 0.03 * w, rot: -2 * w, tx: 0, ty: 0 }
+        }
+        case 'hipo': {
+          const bump = Math.sin(clamp(elapsed / 400, 0, 1) * Math.PI)
+          return { sx: 1, sy: 1 + 0.08 * bump, rot: 0, tx: 0, ty: -10 * bump }
+        }
+        case 'estornudo': {
+          const s = clamp(elapsed / 900, 0, 1)
+          if (s < 0.4) {
+            const u = s / 0.4
+            return { sx: 1 + 0.22 * u, sy: 1 + 0.22 * u, rot: 0, tx: 0, ty: 0 }
+          }
+          if (s < 0.55) {
+            const u = (s - 0.4) / 0.15
+            return { sx: 1.22 - 0.37 * u, sy: 1.22 - 0.32 * u, rot: 0, tx: -14 * u, ty: 0 }
+          }
+          const u = clamp((s - 0.55) / 0.45, 0, 1)
+          return { sx: 0.85 + 0.15 * u, sy: 0.9 + 0.1 * u, rot: 0, tx: -14 * (1 - u), ty: 0 }
+        }
+        case 'poseGraciosa': {
+          const s = clamp(elapsed / 1600, 0, 1)
+          return { sx: 1, sy: 1, rot: Math.sin(s * Math.PI * 2) * 10 * (1 - s), tx: 0, ty: 0 }
+        }
+        case 'mosca':
+          return { sx: 1, sy: 1, rot: Math.sin((elapsed / 2200) * Math.PI * 2) * 6, tx: 0, ty: 0 }
+        case 'eructo': {
+          const w = Math.sin((elapsed / 1200) * Math.PI * 2)
+          return { sx: 1 + 0.1 * w, sy: 1 - 0.08 * w, rot: 0, tx: 0, ty: 0 }
+        }
+        case 'hambre': {
+          const eased = easeOutQuad(clamp(elapsed / 900, 0, 1))
+          return { sx: 1 + 0.02 * eased, sy: 1 - 0.07 * eased, rot: 0, tx: 0, ty: 3 * eased }
+        }
+        default:
+          return null
       }
-      if (now < landUntil) classes.push('ball--land')
-      if (cr.reaction) classes.push(`ball--reaction-${cr.reaction}`)
-      if (cr.petted) classes.push('ball--petted')
-      return classes.join(' ')
+    }
+
+    let reactionActive = false
+    let reactionToggledAt = 0
+    let reactionKeyForPose = null
+    let reactionStartedAt = 0
+
+    const composedPose = (cr, now) => {
+      const nextBaseKey =
+        mode === 'chain'
+          ? `chain:${chainSubPhase}`
+          : mode === 'hop'
+            ? `hop:${hopKind}`
+            : mode === 'drag'
+              ? 'drag'
+              : `state:${cr.state}`
+      if (nextBaseKey !== baseKey) {
+        poseBlendFrom = lastBasePose
+        poseBlendStart = now
+        baseKey = nextBaseKey
+        poseStartedAt = now
+      }
+      const raw = rawBasePose(now)
+      const blendT = clamp((now - poseBlendStart) / POSE_BLEND_MS, 0, 1)
+      const base = blendT >= 1 ? raw : lerpPose(poseBlendFrom, raw, easeInOutSine(blendT))
+      lastBasePose = base
+
+      const nowReactionActive = Boolean(cr.reaction)
+      if (nowReactionActive !== reactionActive) {
+        reactionActive = nowReactionActive
+        reactionToggledAt = now
+      }
+      if (cr.reaction && cr.reaction !== reactionKeyForPose) {
+        reactionKeyForPose = cr.reaction
+        reactionStartedAt = now
+      }
+      const weight = reactionActive
+        ? clamp((now - reactionToggledAt) / 150, 0, 1)
+        : clamp(1 - (now - reactionToggledAt) / 150, 0, 1)
+      const delta = weight > 0.001 && reactionKeyForPose ? reactionDelta(reactionKeyForPose, now - reactionStartedAt) : null
+
+      let { sx, sy, rot, tx, ty } = base
+      if (delta) {
+        sx *= 1 + (delta.sx - 1) * weight
+        sy *= 1 + (delta.sy - 1) * weight
+        rot += delta.rot * weight
+        tx += delta.tx * weight
+        ty += delta.ty * weight
+      }
+
+      if (now < landUntil) {
+        const landT = clamp(1 - (landUntil - now) / 140, 0, 1)
+        sx = 1.24 + (sx - 1.24) * landT
+        sy = 0.72 + (sy - 0.72) * landT
+      }
+
+      return `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) rotate(${rot.toFixed(2)}deg) scale(${sx.toFixed(3)}, ${sy.toFixed(3)})`
     }
 
     const tick = (now) => {
@@ -371,7 +516,8 @@ function BouncingBall({ onClick, creature, seed }) {
         shadow.style.opacity = 0.55 * shrink
       }
 
-      ball.className = classNameFor(cr, now)
+      ball.style.transform = composedPose(cr, now)
+      ball.className = cr.petted ? 'ball ball--petted' : 'ball'
 
       raf = requestAnimationFrame(tick)
     }

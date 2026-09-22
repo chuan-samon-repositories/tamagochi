@@ -609,7 +609,9 @@ svg.blob-figure {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* La pose (estirado/aplastado/girado) la calcula App.jsx cuadro a cuadro y
+     la mezcla suavemente entre estados; una transición CSS aquí competiría
+     con esa mezcla en vez de ayudarla. */
 }
 
 .ball .blob-figure {
@@ -654,240 +656,10 @@ svg.blob-figure {
   }
 }
 
-.ball--crouch {
-  transform: scale(1.18, 0.8);
-}
-
-.ball--stretch {
-  transform: scale(0.86, 1.16);
-}
-
-.ball--land {
-  transform: scale(1.24, 0.72);
-}
-
-/* --- estados quietos: quieto/bostezo/aburrido/vibrar/dormir/estirarse. El
-   salto alto y la voltereta reutilizan crouch/stretch/land del motor de
-   saltos y solo añaden su propia rotación. --------------------------------- */
-
-.ball--voltereta-spin {
-  animation: voltereta-spin var(--flip-duration, 600ms) ease-in-out;
-}
-
-@keyframes voltereta-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.ball--quieto {
-  animation: quieto-sway 2.6s ease-in-out infinite;
-}
-
-@keyframes quieto-sway {
-  0%, 100% {
-    transform: rotate(0deg);
-  }
-  50% {
-    transform: rotate(1.4deg);
-  }
-}
-
-.ball--bostezo,
-.ball--estirarse {
-  animation: bostezo-stretch 1.4s ease-in-out both;
-}
-
-@keyframes bostezo-stretch {
-  0% {
-    transform: scale(1, 1);
-  }
-  45% {
-    transform: scale(0.9, 1.22);
-  }
-  100% {
-    transform: scale(1, 1);
-  }
-}
-
-.ball--aburrido {
-  animation: aburrido-deflate 3s ease-in-out both;
-}
-
-@keyframes aburrido-deflate {
-  0% {
-    transform: scale(1, 1);
-  }
-  40% {
-    transform: scale(1.04, 0.88) translateY(4px);
-  }
-  100% {
-    transform: scale(1.02, 0.92) translateY(4px);
-  }
-}
-
-.ball--vibrar {
-  animation: vibrar-shake 0.09s linear infinite;
-}
-
-@keyframes vibrar-shake {
-  0%, 100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  25% {
-    transform: translate(1.6px, -1px) rotate(-1.4deg);
-  }
-  75% {
-    transform: translate(-1.6px, 1px) rotate(1.4deg);
-  }
-}
-
-.ball--dormir {
-  animation: dormir-flatten 1.2s ease-out forwards;
-}
-
-@keyframes dormir-flatten {
-  0% {
-    transform: scale(1, 1);
-  }
-  100% {
-    transform: scale(1.16, 0.76) translateY(10px);
-  }
-}
-
-.ball--hambre {
-  animation: aburrido-deflate 1.6s ease-in-out both;
-}
-
-/* --- reacciones: se superponen a la animación de fondo, no la sustituyen -- */
-
-.ball--reaction-risa {
-  animation: risa-shake 0.12s linear infinite;
-}
-
-@keyframes risa-shake {
-  0%, 100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-3px) rotate(3deg);
-  }
-}
-
-.ball--reaction-enfado {
-  animation: enfado-shake 0.1s linear infinite;
-}
-
-@keyframes enfado-shake {
-  0%, 100% {
-    transform: translate(0, 0);
-  }
-  25% {
-    transform: translate(-2px, 0);
-  }
-  75% {
-    transform: translate(2px, 0);
-  }
-}
-
-.ball--reaction-acariciado {
-  animation: acariciado-wiggle 0.6s ease-in-out infinite;
-}
-
-@keyframes acariciado-wiggle {
-  0%, 100% {
-    transform: scale(1, 1) rotate(0deg);
-  }
-  50% {
-    transform: scale(1.03, 0.97) rotate(-2deg);
-  }
-}
-
-.ball--reaction-hipo {
-  animation: hipo-jump 0.4s ease-out;
-}
-
-@keyframes hipo-jump {
-  0% {
-    transform: translateY(0);
-  }
-  40% {
-    transform: translateY(-10px) scale(0.95, 1.08);
-  }
-  100% {
-    transform: translateY(0);
-  }
-}
-
-.ball--reaction-estornudo {
-  animation: estornudo-sneeze 0.9s ease-out;
-}
-
-@keyframes estornudo-sneeze {
-  0% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(1.22, 1.22);
-  }
-  55% {
-    transform: scale(0.85, 0.9) translateX(-14px);
-  }
-  100% {
-    transform: scale(1) translateX(0);
-  }
-}
-
-.ball--reaction-poseGraciosa {
-  animation: pose-graciosa 1.6s ease-in-out;
-}
-
-@keyframes pose-graciosa {
-  0%, 100% {
-    transform: rotate(0deg) scale(1);
-  }
-  30% {
-    transform: rotate(-12deg) scale(1.05, 0.95);
-  }
-  60% {
-    transform: rotate(8deg) scale(0.97, 1.04);
-  }
-}
-
-.ball--reaction-mosca {
-  animation: mosca-track 2.2s ease-in-out;
-}
-
-@keyframes mosca-track {
-  0%, 100% {
-    transform: rotate(0deg);
-  }
-  25% {
-    transform: rotate(-6deg);
-  }
-  75% {
-    transform: rotate(6deg);
-  }
-}
-
-.ball--reaction-eructo {
-  animation: eructo-wobble 1.2s ease-in-out;
-}
-
-@keyframes eructo-wobble {
-  0%, 100% {
-    transform: scale(1, 1);
-  }
-  30% {
-    transform: scale(1.1, 0.92);
-  }
-  60% {
-    transform: scale(0.95, 1.05);
-  }
-}
+/* La pose del cuerpo (crouch/stretch/land, quieto/bostezo/aburrido/vibrar/
+   dormir/estirarse, y las reacciones) ya no vive aquí: App.jsx la calcula
+   cuadro a cuadro y mezcla una con la siguiente, así que nunca hay un corte
+   en seco entre animaciones CSS distintas. Ver `composedPose` en App.jsx. */
 
 .fly-sprite {
   position: absolute;
@@ -960,7 +732,7 @@ svg.blob-figure {
   }
 }
 
-.ball--petted:not([class*='ball--reaction']) {
+.ball--petted {
   filter: drop-shadow(0 0 6px rgba(255, 107, 138, 0.35));
 }
 
