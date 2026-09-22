@@ -704,9 +704,9 @@ const stats = [
 ]
 
 const orbStats = [
-  { label: 'Vida', value: 86, tone: 'life' },
-  { label: 'Hambre', value: 54, tone: 'hunger' },
-  { label: 'Sed', value: 68, tone: 'thirst' },
+  { label: 'Vida', value: 86, tone: 'life', icon: '❤️' },
+  { label: 'Hambre', value: 54, tone: 'hunger', icon: '🍗' },
+  { label: 'Sed', value: 68, tone: 'thirst', icon: '💧' },
 ]
 
 const intelligences = [
@@ -819,17 +819,22 @@ function IntelligenceStat() {
   )
 }
 
-function Orb({ label, value, tone }) {
+function Orb({ label, value, tone, icon }) {
+  const low = value <= 25
   return (
-    <div className={`orb orb--${tone}`} aria-label={`${label}: ${value}%`}>
+    <div className={`orb orb--${tone} ${low ? 'orb--low' : ''}`} aria-label={`${label}: ${value}%`}>
       <div className="orb-clip">
         <div className="orb-fill" style={{ height: `${value}%` }}>
           <span className="orb-wave-strip orb-wave-strip--1" />
           <span className="orb-wave-strip orb-wave-strip--2" />
+          <span className="orb-bubble orb-bubble--1" />
+          <span className="orb-bubble orb-bubble--2" />
+          <span className="orb-bubble orb-bubble--3" />
         </div>
         <span className="orb-sheen" aria-hidden="true" />
-        <span className="orb-percent">{value}%</span>
+        <span className="orb-icon" aria-hidden="true">{icon}</span>
       </div>
+      <span className="orb-percent">{value}%</span>
     </div>
   )
 }
