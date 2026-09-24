@@ -4,7 +4,7 @@
 // poder tocar números sin tocar lógica.
 
 export const CREATURE_CONFIG = {
-  // --- Los ocho estados, con su peso base y su duración base en ms --------
+  // --- Los siete estados, con su peso base y su duración base en ms -------
   // El peso decide qué tan probable es que salga elegido; la duración es el
   // punto medio del rango pedido y luego se le aplica ±30% de ruido al
   // vuelo (ver engine.js), salvo "dormir", que ya es un rango ancho a
@@ -13,7 +13,6 @@ export const CREATURE_CONFIG = {
     idle: { weight: 30, minMs: 3000, maxMs: 6000 },
     quieto: { weight: 20, minMs: 2000, maxMs: 5000 },
     saltoAlto: { weight: 8, minMs: 1000, maxMs: 1000 },
-    voltereta: { weight: 6, minMs: 1000, maxMs: 1000 },
     bostezo: { weight: 5, minMs: 1500, maxMs: 1500 },
     aburrido: { weight: 4, minMs: 3000, maxMs: 3000 },
     vibrar: { weight: 3, minMs: 2000, maxMs: 2000 },
@@ -22,7 +21,7 @@ export const CREATURE_CONFIG = {
 
   // Estados que mueven al bicho por la pantalla (motor de saltos ya
   // existente); el resto se anima sobre su sitio.
-  movingStates: ['idle', 'saltoAlto', 'voltereta'],
+  movingStates: ['idle', 'saltoAlto'],
 
   // Antes de dormir siempre hay bostezo, y al despertar siempre hay
   // estiramiento — se insertan a mano, no salen del sorteo.
@@ -43,7 +42,6 @@ export const CREATURE_CONFIG = {
       dormir: 10,
       bostezo: 4,
       saltoAlto: 0.4,
-      voltereta: 0.4,
     },
     nightHourStart: 23,
     nightHourEnd: 7, // [23:00, 7:00)
@@ -51,7 +49,6 @@ export const CREATURE_CONFIG = {
       dormir: 5,
       // "movimiento" = cualquier estado que no sea quedarse quieto.
       saltoAlto: 0.5,
-      voltereta: 0.5,
       vibrar: 0.5,
     },
     morningHourStart: 7,
@@ -68,25 +65,22 @@ export const CREATURE_CONFIG = {
     // por la animación de hambre en vez de salir del sorteo normal.
     hungerOverrideMinMs: 30000,
     hungerOverrideMaxMs: 60000,
-    // Recién acariciado: saltos, volteretas y vibrar el doble de probables.
+    // Recién acariciado: saltos y vibrar el doble de probables.
     pettedBoostMs: 90 * 1000, // 1-2 min, punto medio
     petted: {
       saltoAlto: 2,
-      voltereta: 2,
       vibrar: 2,
     },
     sadOrSickThreshold: 0.3, // salud mental por debajo de esto
     sadOrSick: {
       aburrido: 3,
       saltoAlto: 0.3,
-      voltereta: 0.3,
       vibrar: 0.3,
     },
   },
 
   // --- Cooldowns -------------------------------------------------------------
   cooldowns: {
-    // Salto alto y voltereta comparten cooldown: uno bloquea al otro.
     acrobaticsMinMs: 15000,
     acrobaticsMaxMs: 20000,
   },
@@ -101,24 +95,6 @@ export const CREATURE_CONFIG = {
     petHoldMs: 550,
     petVibrateMs: 1800,
     dragMoveThresholdPx: 6,
-  },
-
-  // --- Micro-animaciones continuas: las que ya traían las granotes de RANA
-  // (parpelleig, respiració, gola inflada en pose "puff") en vez de las
-  // ocurrencias inventadas para el bicho anterior. ---------------------------
-  micro: {
-    blinkMinMs: 2000,
-    blinkMaxMs: 6000,
-    blinkDurationMs: 140,
-    breathCycleMs: 1400,
-  },
-
-  // Raucar: la granota infla la gola (puff1 -> puff2 -> idle) de tanto en
-  // tanto mientras está quieta o botant.
-  croak: {
-    minMs: 8000,
-    maxMs: 18000,
-    durationMs: 900,
   },
 }
 

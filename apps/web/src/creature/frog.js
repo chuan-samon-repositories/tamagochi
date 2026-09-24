@@ -4,7 +4,6 @@
 // el cómo se ve cada pose, y la propia generación infinita a partir de una
 // semilla, es enteramente de RANA.
 import { Granota } from './granota'
-import { CREATURE_CONFIG as CFG } from './config'
 
 /** Una llavor de 32 bits determinista a partir de cualquier string (el seed
  * de localStorage, pensado para blobatar, sirve igual para Granota). */
@@ -28,8 +27,8 @@ const STATE_POSE = {
   dormir: 'blink',
 }
 
-/** Pose durante un salto (idle en cadena, salto alto o voltereta), a partir
- * del progreso 0..1 ya calculado por el motor de saltos. */
+/** Pose durante un salto (idle en cadena o salto alto), a partir del
+ * progreso 0..1 ya calculado por el motor de saltos. */
 export function hopPose(t) {
   if (t < 0.12) return 'crouch'
   if (t < 0.3) return 'takeoff'
@@ -37,21 +36,10 @@ export function hopPose(t) {
   return 'fall'
 }
 
-/** Raucar: infla la gola y la deshincha (puff1 -> puff2 -> puff1). */
-function croakPose(elapsedMs) {
-  const half = CFG.croak.durationMs / 2
-  return elapsedMs < half ? 'puff1' : 'puff2'
-}
-
-/** La pose de Granota para el fotograma actual: reacción > salto > estado,
- * con el parpelleig y la respiració (propios de la granota) por encima de
- * todo salvo cuando el salto o el "croar" ya están cambiando la cara. */
-export function poseFor({ mode, hopT, state, reaction, reactionElapsedMs, blinking, breathPhase }) {
-  if (reaction === 'croar') return croakPose(reactionElapsedMs)
+/** La pose de Granota para el fotograma actual: salto por encima de estado. */
+export function poseFor({ mode, hopT, state }) {
   if (mode === 'hop' || mode === 'chain-hop') return hopPose(hopT)
-  if (blinking && state !== 'dormir') return 'blink'
-  const pose = STATE_POSE[state] || 'idle'
-  return pose === 'idle' && breathPhase ? 'breath' : pose
+  return STATE_POSE[state] || 'idle'
 }
 
 const frogCache = new Map()

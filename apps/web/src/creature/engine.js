@@ -56,7 +56,6 @@ export function computeWeights(ctx) {
     ctx.lastAcrobaticAt != null && ctx.now - ctx.lastAcrobaticAt < ctx.acrobaticsCooldownMs
   if (inAcrobaticsCooldown) {
     weights.saltoAlto = 0
-    weights.voltereta = 0
   }
 
   return weights
@@ -98,8 +97,4 @@ export function pickDuration(stateId, rng = Math.random) {
 export function pickAcrobaticsCooldownMs(rng = Math.random) {
   const { acrobaticsMinMs, acrobaticsMaxMs } = CFG.cooldowns
   return acrobaticsMinMs + rng() * (acrobaticsMaxMs - acrobaticsMinMs)
-}
-
-export function pickDelayBetween(minMs, maxMs, rng = Math.random) {
-  return minMs + rng() * (maxMs - minMs)
 }

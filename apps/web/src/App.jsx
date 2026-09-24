@@ -91,7 +91,6 @@ const MAX_TILT = 16
 // del botar en cadena, que reutiliza las constantes de arriba tal cual).
 const HOP_PROFILES = {
   saltoAlto: { distMin: 10, distMax: 60, height: 36, msPerPx: 7, durationMin: 500, durationMax: 900 },
-  voltereta: { distMin: 50, distMax: 120, height: 17, msPerPx: 5.5, durationMin: 500, durationMax: 900 },
 }
 const DRAG_LIFT = 20
 const DRAG_MOVE_THRESHOLD = 6
@@ -313,8 +312,7 @@ function BouncingBall({ onClick, creature, seed }) {
           sx = 0.86
           sy = 1.16
         }
-        const rot = hopKind === 'voltereta' ? t * 360 : 0
-        return { sx, sy, rot, tx: 0, ty: 0 }
+        return { sx, sy, rot: 0, tx: 0, ty: 0 }
       }
       if (mode === 'chain') return IDENTITY_POSE
       switch (creatureRef.current.state) {
@@ -514,10 +512,6 @@ function BouncingBall({ onClick, creature, seed }) {
               mode: mode === 'chain' && chainSubPhase === 'hop' ? 'chain-hop' : mode,
               hopT,
               state: cr.state,
-              reaction: cr.reaction,
-              reactionElapsedMs: now - reactionStartedAt,
-              blinking: cr.blinking,
-              breathPhase: cr.breathPhase,
             })
       let lx = 0
       let ly = 0

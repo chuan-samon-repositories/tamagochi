@@ -6,7 +6,6 @@ const LABELS = {
   idle: 'Botar',
   quieto: 'Quieto',
   saltoAlto: 'Salto alto',
-  voltereta: 'Voltereta',
   bostezo: 'Bostezo',
   aburrido: 'Aburrido',
   vibrar: 'Vibrar',

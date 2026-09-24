@@ -1,17 +1,10 @@
-// El "cerebro" de la animación: recorre los ocho estados de
-// CREATURE_CONFIG, aplica sus modificadores y cooldowns, mantiene vivas las
-// micro-animaciones propias de una granota (parpelleig, respiració, raucar)
-// y reacciona a lo que el jugador hace con el bicho. No sabe nada de píxeles
-// ni de rAF — eso lo decide quien pinte `state`.
+// El "cerebro" de la animación: recorre los siete estados de
+// CREATURE_CONFIG, aplica sus modificadores y cooldowns, y reacciona a lo
+// que el jugador hace con el bicho. No sabe nada de píxeles ni de rAF —
+// eso lo decide quien pinte `state`.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CREATURE_CONFIG as CFG } from './config'
-import {
-  computeWeights,
-  pickAcrobaticsCooldownMs,
-  pickDelayBetween,
-  pickDuration,
-  pickNextState,
-} from './engine'
+import { computeWeights, pickAcrobaticsCooldownMs, pickDuration, pickNextState } from './engine'
 import { DIZZY_STATES } from './expressions'
 
 const FORCED_DURATION_MS = 24 * 60 * 60 * 1000 // el debug "fuerza" hasta que se le diga lo contrario
@@ -88,7 +81,7 @@ export function useCreature({ energyPct = 1, sanityPct = 1, hungerPct = 0 } = {}
         }
       }
 
-      if (nextId === 'saltoAlto' || nextId === 'voltereta') {
+      if (nextId === 'saltoAlto') {
         lastAcrobaticAtRef.current = Date.now()
         acrobaticsCooldownMsRef.current = pickAcrobaticsCooldownMs()
       }
@@ -137,60 +130,6 @@ export function useCreature({ energyPct = 1, sanityPct = 1, hungerPct = 0 } = {}
       }, delay)
     }
     tick()
-    return () => {
-      cancelled = true
-      clearTimeout(handle)
-    }
-  }, [clearReactionSoon])
-
-  // --- Parpelleig: el que ponía blobatar solo, aquí a mano ---------------------
-  const [blinking, setBlinking] = useState(false)
-  useEffect(() => {
-    let cancelled = false
-    let handle
-    const loop = () => {
-      const { blinkMinMs, blinkMaxMs, blinkDurationMs } = CFG.micro
-      handle = setTimeout(() => {
-        if (cancelled) return
-        if (stateIdRef.current !== 'dormir') {
-          setBlinking(true)
-          setTimeout(() => {
-            if (!cancelled) setBlinking(false)
-          }, blinkDurationMs)
-        }
-        loop()
-      }, pickDelayBetween(blinkMinMs, blinkMaxMs))
-    }
-    loop()
-    return () => {
-      cancelled = true
-      clearTimeout(handle)
-    }
-  }, [])
-
-  // --- Respiració: alterna entre "idle" i "breath" mientras está de pie ------
-  const [breathPhase, setBreathPhase] = useState(false)
-  useEffect(() => {
-    const id = setInterval(() => setBreathPhase((p) => !p), CFG.micro.breathCycleMs / 2)
-    return () => clearInterval(id)
-  }, [])
-
-  // --- Raucar: la granota infla la gola de tanto en tanto, quieta o botant ---
-  useEffect(() => {
-    let cancelled = false
-    let handle
-    const loop = () => {
-      const { minMs, maxMs, durationMs } = CFG.croak
-      handle = setTimeout(() => {
-        if (cancelled) return
-        if (stateIdRef.current === 'idle' || stateIdRef.current === 'quieto') {
-          setReaction('croar')
-          clearReactionSoon(durationMs)
-        }
-        loop()
-      }, pickDelayBetween(minMs, maxMs))
-    }
-    loop()
     return () => {
       cancelled = true
       clearTimeout(handle)
@@ -270,8 +209,6 @@ export function useCreature({ energyPct = 1, sanityPct = 1, hungerPct = 0 } = {}
     stateEntryId,
     isMoving,
     dizzyEyes,
-    blinking,
-    breathPhase,
     reaction: activeReaction,
     petted: Date.now() < pettedUntilRef.current,
     registerTap,
