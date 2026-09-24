@@ -1,19 +1,19 @@
-// El "cerebro" de la animación: recorre los doce estados de
-// CREATURE_CONFIG, aplica sus modificadores y cooldowns, dispara los
-// eventos raros y reacciona a lo que el jugador hace con el bicho. No sabe
-// nada de píxeles ni de rAF — eso lo decide quien pinte `state`.
+// El "cerebro" de la animación: recorre los ocho estados de
+// CREATURE_CONFIG, aplica sus modificadores y cooldowns, mantiene vivas las
+// micro-animaciones propias de una granota (parpelleig, respiració, raucar)
+// y reacciona a lo que el jugador hace con el bicho. No sabe nada de píxeles
+// ni de rAF — eso lo decide quien pinte `state`.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CREATURE_CONFIG as CFG } from './config'
 import {
   computeWeights,
   pickAcrobaticsCooldownMs,
+  pickDelayBetween,
   pickDuration,
   pickNextState,
-  pickRareEventDelay,
 } from './engine'
 import { DIZZY_STATES } from './expressions'
 
-const RARE_EVENTS = ['hipo', 'estornudo', 'poseGraciosa', 'mosca']
 const FORCED_DURATION_MS = 24 * 60 * 60 * 1000 // el debug "fuerza" hasta que se le diga lo contrario
 
 export function useCreature({ energyPct = 1, sanityPct = 1, hungerPct = 0 } = {}) {
@@ -143,26 +143,57 @@ export function useCreature({ energyPct = 1, sanityPct = 1, hungerPct = 0 } = {}
     }
   }, [clearReactionSoon])
 
-  // --- Eventos raros: hipo, estornudo, pose graciosa, mosca -------------------
+  // --- Parpelleig: el que ponía blobatar solo, aquí a mano ---------------------
+  const [blinking, setBlinking] = useState(false)
   useEffect(() => {
     let cancelled = false
-    const handles = []
-    for (const name of RARE_EVENTS) {
-      const loop = () => {
-        const delay = pickRareEventDelay(name)
-        const handle = setTimeout(() => {
-          if (cancelled) return
-          setReaction(name)
-          clearReactionSoon(CFG.rareEvents[name].durationMs)
-          loop()
-        }, delay)
-        handles.push(handle)
-      }
-      loop()
+    let handle
+    const loop = () => {
+      const { blinkMinMs, blinkMaxMs, blinkDurationMs } = CFG.micro
+      handle = setTimeout(() => {
+        if (cancelled) return
+        if (stateIdRef.current !== 'dormir') {
+          setBlinking(true)
+          setTimeout(() => {
+            if (!cancelled) setBlinking(false)
+          }, blinkDurationMs)
+        }
+        loop()
+      }, pickDelayBetween(blinkMinMs, blinkMaxMs))
     }
+    loop()
     return () => {
       cancelled = true
-      handles.forEach(clearTimeout)
+      clearTimeout(handle)
+    }
+  }, [])
+
+  // --- Respiració: alterna entre "idle" i "breath" mientras está de pie ------
+  const [breathPhase, setBreathPhase] = useState(false)
+  useEffect(() => {
+    const id = setInterval(() => setBreathPhase((p) => !p), CFG.micro.breathCycleMs / 2)
+    return () => clearInterval(id)
+  }, [])
+
+  // --- Raucar: la granota infla la gola de tanto en tanto, quieta o botant ---
+  useEffect(() => {
+    let cancelled = false
+    let handle
+    const loop = () => {
+      const { minMs, maxMs, durationMs } = CFG.croak
+      handle = setTimeout(() => {
+        if (cancelled) return
+        if (stateIdRef.current === 'idle' || stateIdRef.current === 'quieto') {
+          setReaction('croar')
+          clearReactionSoon(durationMs)
+        }
+        loop()
+      }, pickDelayBetween(minMs, maxMs))
+    }
+    loop()
+    return () => {
+      cancelled = true
+      clearTimeout(handle)
     }
   }, [clearReactionSoon])
 
@@ -217,13 +248,6 @@ export function useCreature({ energyPct = 1, sanityPct = 1, hungerPct = 0 } = {}
     if (value) registerInteraction()
   }, [registerInteraction])
 
-  const triggerBurp = useCallback(() => {
-    if (Math.random() < CFG.rareEvents.eructoChance) {
-      setReaction('eructo')
-      clearReactionSoon(1200)
-    }
-  }, [clearReactionSoon])
-
   // --- Lo que se pinta ---------------------------------------------------------
   const activeReaction = asking ? 'preguntando' : reaction
   const dizzyEyes = !activeReaction && DIZZY_STATES.has(stateId)
@@ -246,6 +270,8 @@ export function useCreature({ energyPct = 1, sanityPct = 1, hungerPct = 0 } = {}
     stateEntryId,
     isMoving,
     dizzyEyes,
+    blinking,
+    breathPhase,
     reaction: activeReaction,
     petted: Date.now() < pettedUntilRef.current,
     registerTap,
@@ -254,7 +280,6 @@ export function useCreature({ energyPct = 1, sanityPct = 1, hungerPct = 0 } = {}
     endPet,
     cancelPet,
     setAsking,
-    triggerBurp,
     debug,
   }
 }

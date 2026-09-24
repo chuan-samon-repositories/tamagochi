@@ -764,36 +764,6 @@
    cuadro a cuadro y mezcla una con la siguiente, así que nunca hay un corte
    en seco entre animaciones CSS distintas. Ver `composedPose` en App.jsx. */
 
-.fly-sprite {
-  position: absolute;
-  top: -18px;
-  left: 50%;
-  font-size: 16px;
-  z-index: 3;
-  animation: fly-drift 2.2s ease-in-out;
-  pointer-events: none;
-}
-
-@keyframes fly-drift {
-  0% {
-    transform: translate(-60px, 20px) scale(0.8);
-    opacity: 0;
-  }
-  20% {
-    opacity: 1;
-  }
-  50% {
-    transform: translate(30px, -10px) scale(1);
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(80px, -30px) scale(0.8);
-    opacity: 0;
-  }
-}
-
 .pet-hearts {
   position: absolute;
   inset: 0;

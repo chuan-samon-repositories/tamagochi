@@ -103,23 +103,22 @@ export const CREATURE_CONFIG = {
     dragMoveThresholdPx: 6,
   },
 
-  // --- Eventos raros (min, max en ms) ----------------------------------------
-  rareEvents: {
-    hipo: { minMs: 3 * 60 * 1000, maxMs: 5 * 60 * 1000, durationMs: 500 },
-    estornudo: { minMs: 5 * 60 * 1000, maxMs: 10 * 60 * 1000, durationMs: 900 },
-    poseGraciosa: { minMs: 10 * 60 * 1000, maxMs: 15 * 60 * 1000, durationMs: 1600 },
-    mosca: { minMs: 5 * 60 * 1000, maxMs: 8 * 60 * 1000, durationMs: 2200 },
-    eructoChance: 0.7,
-  },
-
-  // --- Micro-animaciones continuas --------------------------------------------
+  // --- Micro-animaciones continuas: las que ya traían las granotes de RANA
+  // (parpelleig, respiració, gola inflada en pose "puff") en vez de las
+  // ocurrencias inventadas para el bicho anterior. ---------------------------
   micro: {
     blinkMinMs: 2000,
     blinkMaxMs: 6000,
-    doubleBlinkChance: 0.15,
-    glanceMinMs: 4000,
-    glanceMaxMs: 10000,
-    glanceChance: 0.4,
+    blinkDurationMs: 140,
+    breathCycleMs: 1400,
+  },
+
+  // Raucar: la granota infla la gola (puff1 -> puff2 -> idle) de tanto en
+  // tanto mientras está quieta o botant.
+  croak: {
+    minMs: 8000,
+    maxMs: 18000,
+    durationMs: 900,
   },
 }
 

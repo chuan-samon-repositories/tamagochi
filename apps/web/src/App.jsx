@@ -187,11 +187,6 @@ const REACTION_BUBBLE = {
   risa: '¡ja ja!',
   enfado: '¬¬',
   acariciado: '♥',
-  hipo: 'hic',
-  estornudo: '¡achís!',
-  poseGraciosa: '★',
-  mosca: '?',
-  eructo: 'urp',
   hambre: 'growl~',
 }
 
@@ -361,33 +356,6 @@ function BouncingBall({ onClick, creature, seed }) {
           const w = Math.sin((elapsed / 600) * Math.PI * 2)
           return { sx: 1 + 0.03 * w, sy: 1 - 0.03 * w, rot: -2 * w, tx: 0, ty: 0 }
         }
-        case 'hipo': {
-          const bump = Math.sin(clamp(elapsed / 400, 0, 1) * Math.PI)
-          return { sx: 1, sy: 1 + 0.08 * bump, rot: 0, tx: 0, ty: -10 * bump }
-        }
-        case 'estornudo': {
-          const s = clamp(elapsed / 900, 0, 1)
-          if (s < 0.4) {
-            const u = s / 0.4
-            return { sx: 1 + 0.22 * u, sy: 1 + 0.22 * u, rot: 0, tx: 0, ty: 0 }
-          }
-          if (s < 0.55) {
-            const u = (s - 0.4) / 0.15
-            return { sx: 1.22 - 0.37 * u, sy: 1.22 - 0.32 * u, rot: 0, tx: -14 * u, ty: 0 }
-          }
-          const u = clamp((s - 0.55) / 0.45, 0, 1)
-          return { sx: 0.85 + 0.15 * u, sy: 0.9 + 0.1 * u, rot: 0, tx: -14 * (1 - u), ty: 0 }
-        }
-        case 'poseGraciosa': {
-          const s = clamp(elapsed / 1600, 0, 1)
-          return { sx: 1, sy: 1, rot: Math.sin(s * Math.PI * 2) * 10 * (1 - s), tx: 0, ty: 0 }
-        }
-        case 'mosca':
-          return { sx: 1, sy: 1, rot: Math.sin((elapsed / 2200) * Math.PI * 2) * 6, tx: 0, ty: 0 }
-        case 'eructo': {
-          const w = Math.sin((elapsed / 1200) * Math.PI * 2)
-          return { sx: 1 + 0.1 * w, sy: 1 - 0.08 * w, rot: 0, tx: 0, ty: 0 }
-        }
         case 'hambre': {
           const eased = easeOutQuad(clamp(elapsed / 900, 0, 1))
           return { sx: 1 + 0.02 * eased, sy: 1 - 0.07 * eased, rot: 0, tx: 0, ty: 3 * eased }
@@ -549,6 +517,9 @@ function BouncingBall({ onClick, creature, seed }) {
               hopT,
               state: cr.state,
               reaction: cr.reaction,
+              reactionElapsedMs: now - reactionStartedAt,
+              blinking: cr.blinking,
+              breathPhase: cr.breathPhase,
             })
       let lx = 0
       let ly = 0
@@ -715,11 +686,6 @@ function BouncingBall({ onClick, creature, seed }) {
           <div ref={ballRef} className="ball">
             <canvas ref={figureCanvasRef} className="blob-figure" />
             {hideEyes && <DizzyEyes />}
-            {creature.reaction === 'mosca' && (
-              <span className="fly-sprite" aria-hidden="true">
-                🪰
-              </span>
-            )}
             {creature.reaction === 'acariciado' && (
               <span className="pet-hearts" aria-hidden="true">
                 <span>♥</span>
@@ -1098,16 +1064,6 @@ function App() {
     creature.setAsking(reacting)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reacting])
-
-  const lastProgressStateRef = useRef(null)
-  useEffect(() => {
-    const state = bicho.progress?.state
-    if (state === 'done' && lastProgressStateRef.current !== 'done') {
-      creature.triggerBurp()
-    }
-    lastProgressStateRef.current = state
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bicho.progress?.state])
 
   // Saludo o enfurruñamiento al volver, según cuánto haga que no se abría.
   useEffect(() => {

@@ -100,7 +100,6 @@ export function pickAcrobaticsCooldownMs(rng = Math.random) {
   return acrobaticsMinMs + rng() * (acrobaticsMaxMs - acrobaticsMinMs)
 }
 
-export function pickRareEventDelay(name, rng = Math.random) {
-  const def = CFG.rareEvents[name]
-  return def.minMs + rng() * (def.maxMs - def.minMs)
+export function pickDelayBetween(minMs, maxMs, rng = Math.random) {
+  return minMs + rng() * (maxMs - minMs)
 }
