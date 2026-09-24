@@ -11,7 +11,7 @@ import {
   pickNextState,
   pickRareEventDelay,
 } from './engine'
-import { DIZZY_STATES, REACTION_EXPRESSION, STATE_EXPRESSION, emotionExpression } from './expressions'
+import { DIZZY_STATES } from './expressions'
 
 const RARE_EVENTS = ['hipo', 'estornudo', 'poseGraciosa', 'mosca']
 const FORCED_DURATION_MS = 24 * 60 * 60 * 1000 // el debug "fuerza" hasta que se le diga lo contrario
@@ -228,17 +228,6 @@ export function useCreature({ energyPct = 1, sanityPct = 1, hungerPct = 0 } = {}
   const activeReaction = asking ? 'preguntando' : reaction
   const dizzyEyes = !activeReaction && DIZZY_STATES.has(stateId)
 
-  const expression = useMemo(() => {
-    if (activeReaction && REACTION_EXPRESSION[activeReaction] !== undefined) {
-      return REACTION_EXPRESSION[activeReaction]
-    }
-    if (sanityRef.current < CFG.modifiers.sadOrSickThreshold && !dizzyEyes) {
-      return emotionExpression('triste') ?? STATE_EXPRESSION[stateId]
-    }
-    return STATE_EXPRESSION[stateId]
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeReaction, stateId, sanityPct])
-
   const isMoving = CFG.movingStates.includes(stateId)
 
   const debug = useMemo(
@@ -256,7 +245,6 @@ export function useCreature({ energyPct = 1, sanityPct = 1, hungerPct = 0 } = {}
     state: stateId,
     stateEntryId,
     isMoving,
-    expression,
     dizzyEyes,
     reaction: activeReaction,
     petted: Date.now() < pettedUntilRef.current,

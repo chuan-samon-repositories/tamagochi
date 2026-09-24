@@ -15,25 +15,13 @@
   background-size: cover;
 }
 
+/* El bicho (canvas en el estanque, <img> en la barra lateral y al ponerle
+   nombre) es arte pixel a pixel de Granota: sin suavizado al escalar. */
 .blob-figure {
-  display: flex;
-}
-
-.blob-figure svg {
+  display: block;
   width: 100%;
   height: 100%;
-  display: block;
-}
-
-/* Cuando blob-figure es directamente el <svg> animado (el bicho principal). */
-svg.blob-figure {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.blob-figure--hide-eyes .mo-eyes {
-  display: none;
+  image-rendering: pixelated;
 }
 
 .sidebar {

@@ -1,15 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { blobatar } from 'blobatar'
-import { Blobatar } from '@blobatar/react'
-import { useGaze } from '@blobatar/react/gaze'
-import 'blobatar/motion.css'
-import 'blobatar/gaze.css'
 import { AnswerPanel } from './components/AnswerPanel'
 import { FeedModal } from './components/FeedModal'
 import { SourceBadge } from './components/SourceBadge'
 import { DebugPanel } from './components/DebugPanel'
 import { useBicho } from './useBicho'
 import { useCreature } from './creature/useCreature'
+import { drawFrog, getFrog, poseFor, seedFromString } from './creature/frog'
 import terrainBg from './assets/terrain-bg.webp'
 import nestImage from './assets/nest.webp'
 import eggOnlyImage from './assets/egg-only.webp'
@@ -22,13 +18,20 @@ function randomSeed() {
   return `seed-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
-function BlobFigure({ seed, expression, className }) {
-  const markup = useMemo(
-    () => blobatar(seed, { background: false, expression }),
-    [seed, expression],
-  )
-  // eslint-disable-next-line react/no-danger
-  return <div className={className} dangerouslySetInnerHTML={{ __html: markup }} />
+const FROG_THUMB_SIZE = 96
+
+// Una granota estática (pose "idle"), para los sitios donde solo hace falta
+// un retrato: la barra lateral, la pantalla de ponerle nombre.
+function FrogFigure({ seed, className }) {
+  const dataUrl = useMemo(() => {
+    const frog = getFrog(seedFromString(seed))
+    const canvas = document.createElement('canvas')
+    canvas.width = FROG_THUMB_SIZE
+    canvas.height = FROG_THUMB_SIZE
+    drawFrog(canvas.getContext('2d'), frog, 'idle', 0, 0, FROG_THUMB_SIZE)
+    return canvas.toDataURL()
+  }, [seed])
+  return <img className={className} src={dataUrl} alt="" draggable={false} />
 }
 
 function TerrainBackground() {
@@ -196,6 +199,7 @@ function BouncingBall({ onClick, creature, seed }) {
   const wrapRef = useRef(null)
   const tiltRef = useRef(null)
   const ballRef = useRef(null)
+  const figureCanvasRef = useRef(null)
   const bubbleRef = useRef(null)
   const shadowRef = useRef(null)
   const dustRef = useRef(null)
@@ -205,14 +209,24 @@ function BouncingBall({ onClick, creature, seed }) {
     creatureRef.current = creature
   })
   const [dizzy, setDizzy] = useState(false)
+  const dizzyRef = useRef(false)
+  useEffect(() => {
+    dizzyRef.current = dizzy
+  }, [dizzy])
   const dizzyTimeoutRef = useRef(null)
 
-  const { ref: gazeRef, lookAt } = useGaze({ travel: 2.2 })
+  const frog = useMemo(() => getFrog(seedFromString(seed)), [seed])
+
+  // A dónde mira: la posición del puntero, seguida a mano (Granota solo
+  // necesita -1/0/1 por eje, no las coordenadas exactas).
+  const pointerRef = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
   useEffect(() => {
-    // Dormido no sigue el cursor: los ojos se quedan quietos hasta que se
-    // despierta.
-    lookAt(creature.state === 'dormir' ? 'rest' : 'pointer')
-  }, [lookAt, creature.state])
+    const onMove = (e) => {
+      pointerRef.current = { x: e.clientX, y: e.clientY }
+    }
+    window.addEventListener('pointermove', onMove)
+    return () => window.removeEventListener('pointermove', onMove)
+  }, [])
 
   useEffect(() => () => clearTimeout(dizzyTimeoutRef.current), [])
 
@@ -220,10 +234,14 @@ function BouncingBall({ onClick, creature, seed }) {
     const wrap = wrapRef.current
     const tilt = tiltRef.current
     const ball = ballRef.current
+    const figureCanvas = figureCanvasRef.current
     const bubble = bubbleRef.current
     const shadow = shadowRef.current
     const dust = dustRef.current
-    if (!wrap || !tilt || !ball) return
+    if (!wrap || !tilt || !ball || !figureCanvas) return
+    figureCanvas.width = BALL_SIZE
+    figureCanvas.height = BALL_SIZE
+    const figureCtx = figureCanvas.getContext('2d')
 
     let x = window.innerWidth / 2 - BALL_SIZE / 2
     let y = window.innerHeight / 2 - BALL_SIZE / 2
@@ -445,6 +463,7 @@ function BouncingBall({ onClick, creature, seed }) {
 
       let bob = 0
       let arcHeight = 0
+      let hopT = 0
 
       if (mode === 'drag') {
         arcHeight = DRAG_LIFT
@@ -463,6 +482,7 @@ function BouncingBall({ onClick, creature, seed }) {
           }
         } else {
           const t = clamp((now - hopStartAt) / hopDuration, 0, 1)
+          hopT = t
           const horizT = easeInOutSine(t)
           arcHeight = Math.sin(t * Math.PI) * hopHeight
           x = hopFrom.x + (hopTo.x - hopFrom.x) * horizT
@@ -479,6 +499,7 @@ function BouncingBall({ onClick, creature, seed }) {
         }
       } else if (mode === 'hop') {
         const t = clamp((now - hopStartAt) / hopDuration, 0, 1)
+        hopT = t
         const horizT = easeInOutSine(t)
         arcHeight = Math.sin(t * Math.PI) * hopHeight
         x = hopFrom.x + (hopTo.x - hopFrom.x) * horizT
@@ -493,7 +514,8 @@ function BouncingBall({ onClick, creature, seed }) {
           spawnDust(x + BALL_SIZE / 2, y + BALL_SIZE * 0.92)
         }
       } else {
-        // stationary: apenas un balanceo mínimo, la respiración la pone blobatar
+        // stationary: apenas un balanceo mínimo, la respiración la marca la
+        // propia pose de Granota ('breath').
         bob = Math.sin(now / 900) * 0.6
       }
 
@@ -518,6 +540,25 @@ function BouncingBall({ onClick, creature, seed }) {
 
       ball.style.transform = composedPose(cr, now)
       ball.className = cr.petted ? 'ball ball--petted' : 'ball'
+
+      const pose =
+        dizzyRef.current || cr.dizzyEyes
+          ? 'blink'
+          : poseFor({
+              mode: mode === 'chain' && chainSubPhase === 'hop' ? 'chain-hop' : mode,
+              hopT,
+              state: cr.state,
+              reaction: cr.reaction,
+            })
+      let lx = 0
+      let ly = 0
+      if (cr.state !== 'dormir') {
+        const dx = pointerRef.current.x - (x + BALL_SIZE / 2)
+        const dy = pointerRef.current.y - (y + BALL_SIZE / 2)
+        lx = Math.abs(dx) > 50 ? Math.sign(dx) : 0
+        ly = dy < -70 ? -1 : dy > 70 ? 1 : 0
+      }
+      drawFrog(figureCtx, frog, pose, lx, ly, BALL_SIZE)
 
       raf = requestAnimationFrame(tick)
     }
@@ -629,6 +670,8 @@ function BouncingBall({ onClick, creature, seed }) {
       wrap.removeEventListener('pointerup', endDrag)
       wrap.removeEventListener('pointercancel', endDrag)
     }
+    // `frog` depende de `seed`, que no cambia mientras el bicho está vivo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const hideEyes = dizzy || creature.dizzyEyes
@@ -670,14 +713,7 @@ function BouncingBall({ onClick, creature, seed }) {
       >
         <div ref={tiltRef} className="ball-tilt">
           <div ref={ballRef} className="ball">
-            <Blobatar
-              ref={gazeRef}
-              name={seed}
-              animate="always"
-              background={false}
-              expression={creature.expression}
-              className={`blob-figure ${hideEyes ? 'blob-figure--hide-eyes' : ''}`}
-            />
+            <canvas ref={figureCanvasRef} className="blob-figure" />
             {hideEyes && <DizzyEyes />}
             {creature.reaction === 'mosca' && (
               <span className="fly-sprite" aria-hidden="true">
@@ -859,7 +895,7 @@ function Sidebar({ expanded, onToggle, name, seed, docs, onFeed }) {
         aria-expanded={expanded}
       >
         <div className="sidebar-avatar" aria-hidden="true">
-          <BlobFigure seed={seed} className="blob-figure" />
+          <FrogFigure seed={seed} className="blob-figure" />
         </div>
         <h1 className="sidebar-name">{name}</h1>
         <svg
@@ -975,7 +1011,7 @@ function NamingModal({ onConfirm, seed }) {
     <div className="naming-overlay">
       <form className="naming-card" onSubmit={handleSubmit}>
         <div className="naming-avatar" aria-hidden="true">
-          <BlobFigure seed={seed} className="blob-figure" />
+          <FrogFigure seed={seed} className="blob-figure" />
         </div>
         <h2 className="naming-title">¡Ha nacido!</h2>
         <p className="naming-subtitle">Ponle un nombre a tu nueva mascota</p>
