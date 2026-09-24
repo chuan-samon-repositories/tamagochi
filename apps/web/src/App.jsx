@@ -318,8 +318,8 @@ function BouncingBall({ onClick, creature, seed }) {
       }
       if (mode === 'chain') return IDENTITY_POSE
       switch (creatureRef.current.state) {
-        case 'quieto':
-          return { sx: 1, sy: 1, rot: Math.sin((elapsed / 2600) * Math.PI * 2) * 1.4, tx: 0, ty: 0 }
+        // "quieto" no tiene caso propio: se queda en la identidad (ver
+        // default más abajo), sin balanceo propio — de verdad quieta.
         case 'bostezo':
         case 'estirarse': {
           const bump = Math.sin(clamp(elapsed / 1400, 0, 1) * Math.PI)
@@ -437,7 +437,6 @@ function BouncingBall({ onClick, creature, seed }) {
         arcHeight = DRAG_LIFT
       } else if (mode === 'chain') {
         if (chainSubPhase === 'pause') {
-          bob = Math.sin(now / 190) * 1.5
           if (now >= chainPauseUntil) {
             hopFrom = { x, y }
             hopTo = pickHopTarget(x, y)
@@ -481,11 +480,10 @@ function BouncingBall({ onClick, creature, seed }) {
           landUntil = now + 140
           spawnDust(x + BALL_SIZE / 2, y + BALL_SIZE * 0.92)
         }
-      } else {
-        // stationary: apenas un balanceo mínimo, la respiración la marca la
-        // propia pose de Granota ('breath').
-        bob = Math.sin(now / 900) * 0.6
       }
+      // Quieta de verdad: nada de balanceo propio. Apoyada en el suelo, sin
+      // el bob que llevaba el bicho anterior — la respiración ya la marca
+      // la propia pose de Granota ('breath'), no un vaivén de posición.
 
       wrap.style.transform = `translate(${x}px, ${y + bob}px)`
       tilt.style.transform = `rotate(${tiltDeg}deg)`
