@@ -5,7 +5,7 @@ import { SourceBadge } from './components/SourceBadge'
 import { DebugPanel } from './components/DebugPanel'
 import { useBicho } from './useBicho'
 import { useCreature } from './creature/useCreature'
-import { drawFrog, getFrog, poseFor, seedFromString } from './creature/frog'
+import { drawFrog, getFrog, poseFor, seedFromString, yawOf, yawStep, TURN_STEP_MS } from './creature/frog'
 import terrainBg from './assets/terrain-bg.webp'
 import nestImage from './assets/nest.webp'
 import eggOnlyImage from './assets/egg-only.webp'
@@ -251,6 +251,14 @@ function BouncingBall({ onClick, creature, seed }) {
     let tiltDeg = 0
     let landUntil = 0
     let lastEntryId = creatureRef.current.stateEntryId
+    // Hacia dónde mira (el giro de 45° en 45° de RANA): se gira hacia donde
+    // salta y, al reposar, tira a mirar de cara otra vez.
+    let yaw = 0
+    let yawTarget = 0
+    let lastYawStepAt = performance.now()
+    const faceTowards = (dx, dy) => {
+      if (Math.hypot(dx, dy) > 40) yawTarget = yawOf(dx, dy)
+    }
     let raf
 
     const spawnDust = (cx, cy) => {
@@ -279,10 +287,12 @@ function BouncingBall({ onClick, creature, seed }) {
         hopHeight = profile.height * (0.85 + Math.random() * 0.3)
         tiltDeg = clamp(((hopTo.x - hopFrom.x) / (dist || 1)) * MAX_TILT, -MAX_TILT, MAX_TILT)
         hopStartAt = now
+        faceTowards(hopTo.x - hopFrom.x, hopTo.y - hopFrom.y)
       } else {
         mode = 'stationary'
         hopKind = null
         tiltDeg = 0
+        if (Math.random() < 0.55) yawTarget = 0
       }
     }
 
@@ -444,6 +454,7 @@ function BouncingBall({ onClick, creature, seed }) {
             tiltDeg = clamp(((hopTo.x - hopFrom.x) / (dist || 1)) * MAX_TILT, -MAX_TILT, MAX_TILT)
             chainSubPhase = 'hop'
             hopStartAt = now
+            faceTowards(hopTo.x - hopFrom.x, hopTo.y - hopFrom.y)
           }
         } else {
           const t = clamp((now - hopStartAt) / hopDuration, 0, 1)
@@ -477,6 +488,7 @@ function BouncingBall({ onClick, creature, seed }) {
           tiltDeg = 0
           landUntil = now + 140
           spawnDust(x + BALL_SIZE / 2, y + BALL_SIZE * 0.92)
+          if (Math.random() < 0.55) yawTarget = 0
         }
       }
       // Quieta de verdad: nada de balanceo propio. Apoyada en el suelo, sin
@@ -515,13 +527,17 @@ function BouncingBall({ onClick, creature, seed }) {
             })
       let lx = 0
       let ly = 0
-      if (cr.state !== 'dormir') {
+      if (cr.state !== 'dormir' && yaw === 0) {
         const dx = pointerRef.current.x - (x + BALL_SIZE / 2)
         const dy = pointerRef.current.y - (y + BALL_SIZE / 2)
         lx = Math.abs(dx) > 50 ? Math.sign(dx) : 0
         ly = dy < -70 ? -1 : dy > 70 ? 1 : 0
       }
-      drawFrog(figureCtx, frog, pose, lx, ly, BALL_SIZE)
+      if (yaw !== yawTarget && now - lastYawStepAt > TURN_STEP_MS) {
+        yaw = yawStep(yaw, yawTarget)
+        lastYawStepAt = now
+      }
+      drawFrog(figureCtx, frog, pose, lx, ly, BALL_SIZE, 0.86, yaw)
 
       raf = requestAnimationFrame(tick)
     }
